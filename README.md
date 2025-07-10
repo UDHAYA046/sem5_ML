@@ -23,7 +23,7 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 
 - **Subject Code:** 23CSE301  
 - **Semester:** V  
-- **Instructor:** Dr. Peeta Basi  
+- **Instructor:** Dr. Peeta Basa Pati  
 - **College:** Amrita Vishwa Vidyapeetham, Bangalore
 
 ## 🚀 How to Run

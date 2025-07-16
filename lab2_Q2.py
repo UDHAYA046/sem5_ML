@@ -11,17 +11,17 @@ import matplotlib.pyplot as plt
 file_path = "Lab Session Data.xlsx"
 df = pd.read_excel(file_path, sheet_name="Purchase data")
 
-# STEP 1: Select numeric attributes and drop rows with NaN for simplicity
+# Select numeric attributes and drop rows with NaN for simplicity
 numeric_df = df.select_dtypes(include=[np.number]).dropna()
 
-# STEP 2: Randomly select 20 observation vectors
+# Randomly select 20 observation vectors
 sample_df = numeric_df.sample(n=20, random_state=42).reset_index(drop=True)
 
-# STEP 3: Normalize the data for fair cosine comparison
+# Normalize the data for fair cosine comparison
 scaler = MinMaxScaler()
 normalized_data = scaler.fit_transform(sample_df)
 
-# STEP 4: Compute similarity matrices
+# Compute similarity matrices
 # Jaccard Similarity (treat values as binary)
 binary_data = (sample_df > sample_df.mean()).astype(int)
 jaccard_similarity = 1 - pairwise_distances(binary_data, metric='jaccard')
@@ -36,7 +36,7 @@ smc_matrix = np.array([[smc(r1, r2) for r2 in binary_data.values] for r1 in bina
 from sklearn.metrics.pairwise import cosine_similarity
 cosine_sim = cosine_similarity(normalized_data)
 
-# STEP 5: Plot heatmaps
+# Plot heatmaps
 plt.figure(figsize=(15, 5))
 plt.subplot(1, 3, 1)
 sns.heatmap(jaccard_similarity, annot=False, cmap='viridis')

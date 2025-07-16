@@ -18,6 +18,7 @@ def u_explore_thyroid_dataset():
     u_df.columns = u_df.columns.str.strip()
 
     # REPLACE '?' WITH np.nan TO HANDLE MISSING VALUES
+    pd.set_option('future.no_silent_downcasting', True)
     u_df = u_df.replace('?', np.nan)
     
 

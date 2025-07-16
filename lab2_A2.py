@@ -34,7 +34,7 @@ def u_train_rich_poor_classifier():
     u_predictions = u_model.predict(u_features_X)
 
     # PRINT CLASSIFICATION REPORT WITH ZERO_DIVISION HANDLING
-    print("📌 CLASSIFICATION REPORT:")
+    print(" CLASSIFICATION REPORT:")
     print(classification_report(u_target_y, u_predictions, target_names=["POOR", "RICH"], zero_division=0))
 
     # CONFUSION MATRIX VISUALIZATION

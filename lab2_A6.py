@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 # Load the dataset (update the filename if needed)
 u_df = pd.read_excel("Lab Session Data.xlsx", sheet_name="thyroid0387_UCI")

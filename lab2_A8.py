@@ -13,7 +13,7 @@ u_df = pd.read_excel(file_path, sheet_name="thyroid0387_UCI")
 u_df.replace('?', np.nan, inplace=True)
 
 # Begin imputation
-print("\n🔧 Starting Data Imputation...\n")
+print("\n Starting Data Imputation...\n")
 
 for col in u_df.columns:
     if u_df[col].isnull().sum() > 0:

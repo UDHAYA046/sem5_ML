@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Load the dataset (update the filename if needed)
-u_df = pd.read_excel("your_excel_file.xlsx", sheet_name="thyroid0387_UCI")
+u_df = pd.read_excel("Lab Session Data.xlsx", sheet_name="thyroid0387_UCI")
 
 # Replace '?' with NaN and convert 'f'/'t' to 0/1
 u_df = u_df.replace('?', np.nan)

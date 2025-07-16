@@ -1,44 +1,40 @@
 import pandas as pd
 import numpy as np
-from scipy.stats import mode
+from scipy.stats import zscore
 
-# Replace with your actual DataFrame
-# u_df = pd.read_excel("your_excel_file.xlsx", sheet_name="thyroid0387_UCI")
+# Load dataset from your path
+u_df = pd.read_excel(r"C:\Users\Udhaya\sem5_ML\Lab Session Data.xlsx", sheet_name=0)
 
 # Replace '?' with NaN
 u_df.replace('?', np.nan, inplace=True)
 
-# Convert all columns to appropriate types (if possible)
+# Convert columns to numeric where possible
 for col in u_df.columns:
-    u_df[col] = pd.to_numeric(u_df[col], errors='ignore')
+    try:
+        u_df[col] = pd.to_numeric(u_df[col])
+    except:
+        continue
 
-# Function to detect outliers using IQR method
-def has_outliers(series):
-    if series.dtype.kind in 'biufc':  # only numeric
-        q1 = series.quantile(0.25)
-        q3 = series.quantile(0.75)
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-        return series[(series < lower_bound) | (series > upper_bound)].any()
-    return False
+print("\nMISSING VALUE IMPUTATION STRATEGY:")
+print("===================================")
 
-# Impute missing values
+# Impute missing values using mean, median, or mode based on type and outliers
 for col in u_df.columns:
-    if u_df[col].isnull().any():
-        if u_df[col].dtype.kind in 'biufc':  # Numeric
-            if has_outliers(u_df[col].dropna()):
-                value = u_df[col].median()
-                strategy = "Median"
+    if u_df[col].isnull().sum() > 0:
+        if u_df[col].dtype == 'object':
+            mode_val = u_df[col].mode()[0]
+            u_df[col].fillna(mode_val, inplace=True)
+            print(f"{col} - Categorical - Filled with MODE ({mode_val})")
+        elif np.issubdtype(u_df[col].dtype, np.number):
+            non_null = u_df[col].dropna()
+            z_scores = np.abs(zscore(non_null))
+            if any(z_scores > 3):
+                median_val = non_null.median()
+                u_df[col].fillna(median_val, inplace=True)
+                print(f"{col} - Numeric with Outliers - Filled with MEDIAN ({median_val})")
             else:
-                value = u_df[col].mean()
-                strategy = "Mean"
-        else:  # Categorical
-            value = u_df[col].mode().iloc[0]
-            strategy = "Mode"
-        print(f"Filling missing values in '{col}' using {strategy}: {value}")
-        u_df[col].fillna(value, inplace=True)
+                mean_val = non_null.mean()
+                u_df[col].fillna(mean_val, inplace=True)
+                print(f"{col} - Numeric (No Outliers) - Filled with MEAN ({mean_val})")
 
-# Display updated DataFrame (optional)
-print("\nUpdated DataFrame after Imputation:")
-print(u_df.head())
+print("\n✅ Missing values handled successfully.")

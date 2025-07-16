@@ -21,30 +21,30 @@ def u_explore_thyroid_dataset():
     u_df.replace('?', np.nan, inplace=True)
 
     # DISPLAY ATTRIBUTE DATA TYPES AND SAMPLE VALUES
-    print("\n📌 ATTRIBUTE TYPE SUGGESTIONS:")
+    print("\n ATTRIBUTE TYPE SUGGESTIONS:")
     for u_col in u_df.columns:
         u_values = u_df[u_col].dropna().unique()[:5]
         u_dtype = u_df[u_col].dtype
         if u_dtype == 'object':
             if set(u_values) <= {'f', 't'}:
-                u_suggestion = "Binary → Use Label Encoding (f=0, t=1)"
+                u_suggestion = "Binary _ Use Label Encoding (f=0, t=1)"
             elif len(u_values) < 10:
-                u_suggestion = "Nominal → Use One-Hot Encoding"
+                u_suggestion = "Nominal _ Use One-Hot Encoding"
             else:
-                u_suggestion = "Text / Categorical → Check further"
+                u_suggestion = "Text / Categorical _ Check further"
         elif np.issubdtype(u_dtype, np.number):
             u_suggestion = "Numeric"
         else:
             u_suggestion = "Unknown"
 
-        print(f"🔹 {u_col}: {u_dtype} → {u_suggestion}")
+        print(f" {u_col}: {u_dtype} - {u_suggestion}")
 
     # CHECK FOR MISSING VALUES
-    print("\n📌 MISSING VALUES PER COLUMN:")
+    print("\n MISSING VALUES PER COLUMN:")
     for u_col in u_df.columns:
         u_missing = u_df[u_col].isna().sum()
         if u_missing > 0:
-            print(f"🔸 {u_col}: {u_missing} missing")
+            print(f" {u_col}: {u_missing} missing")
 
     # IDENTIFY NUMERIC COLUMNS
     u_numeric_cols = ['age', 'TSH', 'T3', 'TT4', 'T4U', 'FTI', 'TBG']
@@ -55,7 +55,7 @@ def u_explore_thyroid_dataset():
         u_df[u_col] = pd.to_numeric(u_df[u_col], errors='coerce')
 
     # RANGE, MEAN, VARIANCE AND OUTLIERS
-    print("\n📌 NUMERIC RANGE, MEAN, STD, OUTLIERS:")
+    print("\n NUMERIC RANGE, MEAN, STD, OUTLIERS:")
     for u_col in u_existing_numeric_cols:
         u_data = u_df[u_col].dropna()
         if len(u_data) == 0:
@@ -70,9 +70,9 @@ def u_explore_thyroid_dataset():
         u_lower_limit = u_mean - 3 * u_std
         u_outliers = u_data[(u_data < u_lower_limit) | (u_data > u_upper_limit)]
 
-        print(f"🔹 {u_col}:")
-        print(f"    ➤ Min: {u_min}, Max: {u_max}, Mean: {u_mean}, Std Dev: {u_std}")
-        print(f"    ➤ Outliers detected: {len(u_outliers)}")
+        print(f" {u_col}:")
+        print(f"     Min: {u_min}, Max: {u_max}, Mean: {u_mean}, Std Dev: {u_std}")
+        print(f"     Outliers detected: {len(u_outliers)}")
 
 # RUN THE FUNCTION
 u_explore_thyroid_dataset()

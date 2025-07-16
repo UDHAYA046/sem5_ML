@@ -36,4 +36,4 @@ for col in u_df.columns:
                     u_df[col] = u_df[col].fillna(mean_val)
                     print(f"{col} - Numeric (No Outliers) - Filled with MEAN ({mean_val})")
 
-print("\n✅ Missing values handled successfully.")
+print("\n Missing values handled successfully.")

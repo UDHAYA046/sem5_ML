@@ -5,48 +5,51 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load the Excel data
+# Load and clean data
 file_path = "Lab Session Data.xlsx"
 df = pd.read_excel(file_path, sheet_name="Purchase data")
 
-# Select numeric columns
+# Select numeric columns and fill NaNs with mean
 numeric_df = df.select_dtypes(include=[np.number])
-
-# Fill missing values with column means to avoid NaN drops
 numeric_df = numeric_df.apply(lambda col: col.fillna(col.mean()), axis=0)
 
-# Sample 20 random observation vectors
-sample_df = numeric_df.sample(n=20, random_state=42).reset_index(drop=True)
+# ✅ Ensure enough data rows exist before sampling
+num_rows = numeric_df.shape[0]
+if num_rows < 20:
+    print(f"Only {num_rows} rows available. Sampling all of them instead of 20.")
+    sample_df = numeric_df.copy()
+else:
+    sample_df = numeric_df.sample(n=20, random_state=42).reset_index(drop=True)
 
 # Normalize for cosine similarity
 scaler = MinMaxScaler()
 normalized = scaler.fit_transform(sample_df)
 
-# Binary conversion for similarity measures
+# Binary encoding based on mean for SMC/Jaccard
 binary_df = (sample_df > sample_df.mean()).astype(int)
 
-# Jaccard similarity
+# Jaccard Similarity
 jaccard_sim = 1 - pairwise_distances(binary_df, metric='jaccard')
 
-# SMC (Simple Matching Coefficient)
-def smc(u, v):
-    return np.sum(u == v) / len(u)
+# SMC Similarity
+def smc(x, y):
+    return np.sum(x == y) / len(x)
 
-smc_sim = np.array([[smc(r1, r2) for r2 in binary_df.values] for r1 in binary_df.values])
+smc_sim = np.array([[smc(a, b) for b in binary_df.values] for a in binary_df.values])
 
-# Cosine similarity
+# Cosine Similarity
 from sklearn.metrics.pairwise import cosine_similarity
 cos_sim = cosine_similarity(normalized)
 
-# Plot similarity heatmaps
+# Plot all 3 similarity matrices
 plt.figure(figsize=(15, 5))
 
 plt.subplot(1, 3, 1)
-sns.heatmap(jaccard_sim, cmap="YlGnBu")
+sns.heatmap(jaccard_sim, cmap="Blues")
 plt.title("Jaccard Similarity")
 
 plt.subplot(1, 3, 2)
-sns.heatmap(smc_sim, cmap="YlOrBr")
+sns.heatmap(smc_sim, cmap="Oranges")
 plt.title("SMC Similarity")
 
 plt.subplot(1, 3, 3)

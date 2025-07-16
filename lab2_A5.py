@@ -14,6 +14,7 @@ def u_calculate_jc_smc():
     u_df.columns = u_df.columns.str.strip()
 
     # REPLACE '?' WITH NaN AND DROP NA COLUMNS FROM FIRST TWO ROWS
+    pd.set_option('future.no_silent_downcasting', True)
     u_df = u_df.replace('?', pd.NA)
     u_binary_cols = [col for col in u_df.columns if set(u_df[col].dropna().unique()) <= {'f', 't'}]
 

@@ -19,6 +19,7 @@ def u_explore_thyroid_dataset():
 
     # REPLACE '?' WITH np.nan TO HANDLE MISSING VALUES
     u_df = u_df.replace('?', np.nan)
+    
 
 
     # DISPLAY ATTRIBUTE DATA TYPES AND SAMPLE VALUES

@@ -23,24 +23,30 @@ def u_explore_thyroid_dataset():
     
 
 
-    # DISPLAY ATTRIBUTE DATA TYPES AND SAMPLE VALUES
-    print("\n ATTRIBUTE TYPE SUGGESTIONS:")
-    for u_col in u_df.columns:
-        u_values = u_df[u_col].dropna().unique()[:5]
-        u_dtype = u_df[u_col].dtype
-        if u_dtype == 'object':
-            if set(u_values) <= {'f', 't'}:
-                u_suggestion = "Binary _ Use Label Encoding (f=0, t=1)"
-            elif len(u_values) < 10:
-                u_suggestion = "Nominal _ Use One-Hot Encoding"
-            else:
-                u_suggestion = "Text / Categorical _ Check further"
-        elif np.issubdtype(u_dtype, np.number):
-            u_suggestion = "Numeric"
-        else:
-            u_suggestion = "Unknown"
+    # DISPLAY ATTRIBUTE TYPE SUGGESTIONS (CLEAN FORMAT WITH DASHES)
 
-        print(f" {u_col}: {u_dtype} - {u_suggestion}")
+    print("\nATTRIBUTE TYPE SUGGESTIONS:\n")
+
+    # CATEGORIZE COLUMNS
+    u_summary = {
+        "Numeric": ['Record ID', 'age', 'TSH', 'T3', 'TT4', 'T4U', 'FTI', 'TBG'],
+        "Binary": [col for col in u_df.columns if set(u_df[col].dropna().unique()) <= {'f', 't'}],
+        "Nominal": ['sex', 'referral source'],
+        "Target": ['Condition']
+    }
+
+    # CLEAN FORMATTED PRINTING
+    for u_type, u_cols in u_summary.items():
+        for u_col in u_cols:
+            if u_type == "Binary":
+                print(f"{u_col:<25} - Binary (f=0, t=1)")
+            elif u_type == "Nominal":
+                print(f"{u_col:<25} - Nominal (One-Hot)")
+            elif u_type == "Target":
+                print(f"{u_col:<25} - Target (Nominal)")
+            else:
+                print(f"{u_col:<25} - Numeric")
+
 
     # CHECK FOR MISSING VALUES
     print("\n MISSING VALUES PER COLUMN:")

@@ -1,9 +1,8 @@
-
 import pandas as pd
 
-# LOAD THE DATASET FROM THE EXCEL FILE AND WORKSHEET
+# LOAD THE DATASET FROM THE EXCEL FILE 
 u_file_path = "Lab Session Data.xlsx"
-u_df_full = pd.read_excel(u_file_path, sheet_name="purchase_data")
+u_df_full = pd.read_excel(u_file_path, sheet_name="Purchase data") 
 
 # SELECT NUMERIC COLUMNS ONLY FOR MATRIX OPERATIONS
 u_df_numeric = u_df_full.select_dtypes(include=['float64', 'int64'])
@@ -23,10 +22,10 @@ u_corr_matrix_B = u_square_matrix_B.corr()
 u_corr_matrix_full = u_df_numeric.corr()
 
 #  DISPLAY RESULTS FOR COMPARISON
-print(" COVARIANCE MATRIX – Square Matrix A (Top Left):\n", u_cov_matrix_A, "\n")
-print(" COVARIANCE MATRIX – Square Matrix B:\n", u_cov_matrix_B, "\n")
-print(" COVARIANCE MATRIX – FULL DATASET:\n", u_cov_matrix_full, "\n")
+print("COVARIANCE MATRIX – Square Matrix A (Top Left):\n", u_cov_matrix_A, "\n")
+print("COVARIANCE MATRIX – Square Matrix B:\n", u_cov_matrix_B, "\n")
+print("COVARIANCE MATRIX – Full Dataset:\n", u_cov_matrix_full, "\n")
 
-print(" CORRELATION MATRIX – Square Matrix A (Top Left):\n", u_corr_matrix_A, "\n")
-print(" CORRELATION MATRIX – Square Matrix B:\n", u_corr_matrix_B, "\n")
-print(" CORRELATION MATRIX – FULL DATASET:\n", u_corr_matrix_full, "\n")
+print("CORRELATION MATRIX – Square Matrix A (Top Left):\n", u_corr_matrix_A, "\n")
+print("CORRELATION MATRIX – Square Matrix B:\n", u_corr_matrix_B, "\n")
+print("CORRELATION MATRIX – Full Dataset:\n", u_corr_matrix_full, "\n")

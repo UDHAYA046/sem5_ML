@@ -1,5 +1,3 @@
-# lab2_Q2.py
-
 import pandas as pd
 import numpy as np
 from sklearn.metrics import pairwise_distances
@@ -7,48 +5,53 @@ from sklearn.preprocessing import MinMaxScaler
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Load the Excel data (check sheet name carefully)
+# Load dataset
 file_path = "Lab Session Data.xlsx"
 df = pd.read_excel(file_path, sheet_name="Purchase data")
 
-# Select numeric attributes and drop rows with NaN for simplicity
+# Keep only numeric data and drop rows with missing values
 numeric_df = df.select_dtypes(include=[np.number]).dropna()
 
-# Randomly select 20 observation vectors
+# Check available rows
+if len(numeric_df) < 20:
+    print(f" Not enough data rows. Only {len(numeric_df)} rows available after dropping NaNs.")
+    exit()
+
+# Randomly pick 20 rows
 sample_df = numeric_df.sample(n=20, random_state=42).reset_index(drop=True)
 
-# Normalize the data for fair cosine comparison
+# Normalize for cosine similarity
 scaler = MinMaxScaler()
-normalized_data = scaler.fit_transform(sample_df)
+normalized = scaler.fit_transform(sample_df)
 
-# Compute similarity matrices
-# Jaccard Similarity (treat values as binary)
+# Jaccard similarity: binary conversion
 binary_data = (sample_df > sample_df.mean()).astype(int)
-jaccard_similarity = 1 - pairwise_distances(binary_data, metric='jaccard')
+jaccard_sim = 1 - pairwise_distances(binary_data, metric='jaccard')
 
-# Simple Matching Coefficient (SMC)
+# SMC manually
 def smc(u, v):
     return np.sum(u == v) / len(u)
 
-smc_matrix = np.array([[smc(r1, r2) for r2 in binary_data.values] for r1 in binary_data.values])
+smc_sim = np.array([[smc(r1, r2) for r2 in binary_data.values] for r1 in binary_data.values])
 
-# Cosine Similarity
+# Cosine similarity
 from sklearn.metrics.pairwise import cosine_similarity
-cosine_sim = cosine_similarity(normalized_data)
+cos_sim = cosine_similarity(normalized)
 
-# Plot heatmaps
+# Plot results
 plt.figure(figsize=(15, 5))
+
 plt.subplot(1, 3, 1)
-sns.heatmap(jaccard_similarity, annot=False, cmap='viridis')
-plt.title("Jaccard Similarity (20 samples)")
+sns.heatmap(jaccard_sim, cmap="YlGnBu")
+plt.title("Jaccard Similarity")
 
 plt.subplot(1, 3, 2)
-sns.heatmap(smc_matrix, annot=False, cmap='plasma')
-plt.title("SMC Similarity (20 samples)")
+sns.heatmap(smc_sim, cmap="YlOrBr")
+plt.title("SMC Similarity")
 
 plt.subplot(1, 3, 3)
-sns.heatmap(cosine_sim, annot=False, cmap='coolwarm')
-plt.title("Cosine Similarity (20 samples)")
+sns.heatmap(cos_sim, cmap="coolwarm")
+plt.title("Cosine Similarity")
 
 plt.tight_layout()
 plt.show()

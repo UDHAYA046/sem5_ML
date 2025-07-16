@@ -37,10 +37,10 @@ def u_compute_product_prices_from_purchases():
     u_price_vector_X = np.dot(u_pseudo_inverse_A, u_payment_vector_C)
 
     # PRINT FINAL OUTPUTS i.e. ANSWERS TO ALL 4 QUESTIONS
-    print("📌 DIMENSIONALITY OF THE VECTOR SPACE i.e. NUMBER OF FEATURES:", u_dimensionality)
-    print("📌 NUMBER OF VECTORS IN THE SPACE i.e. NUMBER OF CUSTOMERS:", u_number_of_vectors)
-    print("📌 RANK OF MATRIX A i.e. INDEPENDENT FEATURES:", u_matrix_rank)
-    print("📌 ESTIMATED COST PER PRODUCT [CANDIES, MANGOES, MILK]:", u_price_vector_X.flatten())
+    print(" DIMENSIONALITY OF THE VECTOR SPACE i.e. NUMBER OF FEATURES:", u_dimensionality)
+    print(" NUMBER OF VECTORS IN THE SPACE i.e. NUMBER OF CUSTOMERS:", u_number_of_vectors)
+    print(" RANK OF MATRIX A i.e. INDEPENDENT FEATURES:", u_matrix_rank)
+    print(" ESTIMATED COST PER PRODUCT [CANDIES, MANGOES, MILK]:", u_price_vector_X.flatten())
 
 # INVOKE THE FUNCTION TO EXECUTE TASK A1
 u_compute_product_prices_from_purchases()

@@ -1,14 +1,14 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 def u_train_rich_poor_classifier():
     """
     LOAD DATA, LABEL AS RICH OR POOR, TRAIN CLASSIFIER,
-    PRINT CLASSIFICATION REPORT, AND SHOW CONFUSION MATRIX
+    RETURN CLASSIFICATION REPORT AND CONFUSION MATRIX
     """
 
     # LOAD THE EXCEL FILE i.e. PURCHASE BEHAVIOR OF CUSTOMERS
@@ -33,19 +33,23 @@ def u_train_rich_poor_classifier():
     # PREDICT ON SAME DATA (DEMO PURPOSE ONLY)
     u_predictions = u_model.predict(u_features_X)
 
-    # PRINT CLASSIFICATION REPORT WITH ZERO_DIVISION HANDLING
-    print(" CLASSIFICATION REPORT:")
-    print(classification_report(u_target_y, u_predictions, target_names=["POOR", "RICH"], zero_division=0))
-
-    # CONFUSION MATRIX VISUALIZATION
+    # RETURN REPORT AND CONFUSION MATRIX
+    u_report = classification_report(u_target_y, u_predictions, target_names=["POOR", "RICH"], zero_division=0)
     u_conf_matrix = confusion_matrix(u_target_y, u_predictions)
-    sns.heatmap(u_conf_matrix, annot=True, cmap="Blues", fmt='d',
+
+    return u_report, u_conf_matrix
+
+if __name__ == "__main__":
+    u_report_text, u_matrix = u_train_rich_poor_classifier()
+
+    print(" CLASSIFICATION REPORT:")
+    print(u_report_text)
+
+    sns.heatmap(u_matrix, annot=True, cmap="Blues", fmt='d',
                 xticklabels=["Predicted POOR", "Predicted RICH"],
                 yticklabels=["Actual POOR", "Actual RICH"])
     plt.title("Confusion Matrix")
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
+    plt.tight_layout()
     plt.show()
-
-# CALL THE CLASSIFIER FUNCTION
-u_train_rich_poor_classifier()

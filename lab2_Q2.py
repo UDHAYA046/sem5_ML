@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import pairwise_distances
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.preprocessing import MinMaxScaler  # ✅ THIS ONE IS MISSING
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 import matplotlib.pyplot as plt
 import seaborn as sns

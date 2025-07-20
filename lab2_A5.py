@@ -32,11 +32,11 @@ def u_calculate_jc_smc():
     u_jaccard = f11 / (f11 + f10 + f01) if (f11 + f10 + f01) != 0 else 0
     u_smc = (f11 + f00) / (f11 + f10 + f01 + f00) if (f11 + f10 + f01 + f00) != 0 else 0
 
-    # DISPLAY OUTPUT
-    print("BINARY ATTRIBUTES USED:", len(u_binary_cols))
-    print("f11 =", f11, "  f00 =", f00, "  f10 =", f10, "  f01 =", f01)
-    print("Jaccard Coefficient (JC):", round(u_jaccard, 4))
-    print("Simple Matching Coefficient (SMC):", round(u_smc, 4))
+    return u_binary_cols, f11, f00, f10, f01, u_jaccard, u_smc
 
-# CALL FUNCTION
-u_calculate_jc_smc()
+if __name__ == "__main__":
+    u_cols, f11, f00, f10, f01, jc, smc = u_calculate_jc_smc()
+    print("BINARY ATTRIBUTES USED:", len(u_cols))
+    print("f11 =", f11, "  f00 =", f00, "  f10 =", f10, "  f01 =", f01)
+    print("Jaccard Coefficient (JC):", round(jc, 4))
+    print("Simple Matching Coefficient (SMC):", round(smc, 4))

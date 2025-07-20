@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def u_execute_irctc_stock_analysis():
     """
     LOADS IRCTC STOCK PRICE DATA, PERFORMS STATISTICAL ANALYSIS,
-    PROBABILITY CALCULATION, AND VISUALIZATION FOR TASK A3.
+    PROBABILITY CALCULATION, AND RETURNS RESULTS
     """
 
     # LOAD EXCEL DATA FROM THE "IRCTC Stock Price" SHEET
@@ -43,24 +43,35 @@ def u_execute_irctc_stock_analysis():
     # CONDITIONAL PROBABILITY OF PROFIT GIVEN WEDNESDAY (SAME VALUE)
     u_conditional_profit_given_wed = u_profit_on_wed_prob
 
+    # RETURN RESULTS
+    return {
+        "mean_price": round(u_price_mean, 2),
+        "variance_price": round(u_price_variance, 2),
+        "mean_wed": round(u_wed_mean, 2),
+        "mean_april": round(u_april_mean, 2) if u_april_mean else None,
+        "loss_prob": round(u_loss_probability, 3),
+        "wed_profit_prob": round(u_profit_on_wed_prob, 3),
+        "conditional_profit_wed": round(u_conditional_profit_given_wed, 3),
+        "scatter_data": (u_stock_data['Day'], u_stock_data['Chg%'])
+    }
+
+if __name__ == "__main__":
+    result = u_execute_irctc_stock_analysis()
+
+    print(" POPULATION MEAN OF PRICE:", result["mean_price"])
+    print(" POPULATION VARIANCE OF PRICE:", result["variance_price"])
+    print(" MEAN PRICE ON WEDNESDAYS:", result["mean_wed"])
+    print(" MEAN PRICE IN APRIL:", result["mean_april"] if result["mean_april"] else "No April data available")
+    print(" PROBABILITY OF MAKING A LOSS:", result["loss_prob"])
+    print(" PROBABILITY OF PROFIT ON WEDNESDAY:", result["wed_profit_prob"])
+    print(" CONDITIONAL PROBABILITY OF PROFIT GIVEN WEDNESDAY:", result["conditional_profit_wed"])
+
     # PLOT SCATTER OF Chg% AGAINST DAY OF WEEK
     plt.figure(figsize=(8, 5))
-    plt.scatter(u_stock_data['Day'], u_stock_data['Chg%'], color='orange')
+    plt.scatter(result["scatter_data"][0], result["scatter_data"][1], color='orange')
     plt.title("Chg% vs Day of the Week")
     plt.xlabel("Day")
     plt.ylabel("Chg%")
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-
-    # DISPLAY RESULTS
-    print(" POPULATION MEAN OF PRICE:", round(u_price_mean, 2))
-    print(" POPULATION VARIANCE OF PRICE:", round(u_price_variance, 2))
-    print(" MEAN PRICE ON WEDNESDAYS:", round(u_wed_mean, 2))
-    print(" MEAN PRICE IN APRIL:", round(u_april_mean, 2) if u_april_mean else "No April data available")
-    print(" PROBABILITY OF MAKING A LOSS:", round(u_loss_probability, 3))
-    print(" PROBABILITY OF PROFIT ON WEDNESDAY:", round(u_profit_on_wed_prob, 3))
-    print(" CONDITIONAL PROBABILITY OF PROFIT GIVEN WEDNESDAY:", round(u_conditional_profit_given_wed, 3))
-
-# RUN THE FUNCTION
-u_execute_irctc_stock_analysis()

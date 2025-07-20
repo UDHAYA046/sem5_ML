@@ -4,7 +4,7 @@ import numpy as np
 def u_compute_product_prices_from_purchases():
     """
     LOADS THE 'PURCHASE DATA' SHEET, CONSTRUCTS MATRICES A AND C,
-    AND ANSWERS:
+    AND RETURNS:
     - DIMENSIONALITY OF VECTOR SPACE
     - NUMBER OF VECTORS
     - RANK OF MATRIX A
@@ -36,11 +36,13 @@ def u_compute_product_prices_from_purchases():
     u_pseudo_inverse_A = np.linalg.pinv(u_quantity_matrix_A)
     u_price_vector_X = np.dot(u_pseudo_inverse_A, u_payment_vector_C)
 
-    # PRINT FINAL OUTPUTS i.e. ANSWERS TO ALL 4 QUESTIONS
-    print(" DIMENSIONALITY OF THE VECTOR SPACE i.e. NUMBER OF FEATURES:", u_dimensionality)
-    print(" NUMBER OF VECTORS IN THE SPACE i.e. NUMBER OF CUSTOMERS:", u_number_of_vectors)
-    print(" RANK OF MATRIX A i.e. INDEPENDENT FEATURES:", u_matrix_rank)
-    print(" ESTIMATED COST PER PRODUCT [CANDIES, MANGOES, MILK]:", u_price_vector_X.flatten())
+    return u_dimensionality, u_number_of_vectors, u_matrix_rank, u_price_vector_X.flatten()
 
-# INVOKE THE FUNCTION TO EXECUTE TASK A1
-u_compute_product_prices_from_purchases()
+if __name__ == "__main__":
+    u_dim, u_vecs, u_rank, u_prices = u_compute_product_prices_from_purchases()
+
+    # PRINT FINAL OUTPUTS i.e. ANSWERS TO ALL 4 QUESTIONS
+    print(" DIMENSIONALITY OF THE VECTOR SPACE i.e. NUMBER OF FEATURES:", u_dim)
+    print(" NUMBER OF VECTORS IN THE SPACE i.e. NUMBER OF CUSTOMERS:", u_vecs)
+    print(" RANK OF MATRIX A i.e. INDEPENDENT FEATURES:", u_rank)
+    print(" ESTIMATED COST PER PRODUCT [CANDIES, MANGOES, MILK]:", u_prices)

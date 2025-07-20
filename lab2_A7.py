@@ -4,12 +4,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Load or simulate binary data (replace this with your actual DataFrame)
-np.random.seed(0)
-u_df = pd.DataFrame(np.random.choice([0, 1], size=(20, 10)), columns=[f"Attr{i}" for i in range(10)])
-
-# Jaccard Coefficient
 def jaccard_matrix(df):
+    # Jaccard Coefficient computation
     n = len(df)
     mat = np.zeros((n, n))
     for i in range(n):
@@ -19,8 +15,8 @@ def jaccard_matrix(df):
             mat[i, j] = inter / union if union != 0 else 0
     return pd.DataFrame(mat)
 
-# Simple Matching Coefficient
 def smc_matrix(df):
+    # Simple Matching Coefficient computation
     n = len(df)
     mat = np.zeros((n, n))
     for i in range(n):
@@ -29,29 +25,37 @@ def smc_matrix(df):
             mat[i, j] = matches / len(df.columns)
     return pd.DataFrame(mat)
 
-# Cosine Similarity
 def cosine_matrix(df):
+    # Cosine Similarity computation
     return pd.DataFrame(cosine_similarity(df))
 
-# Compute similarity matrices
-jc = jaccard_matrix(u_df)
-smc = smc_matrix(u_df)
-cos = cosine_matrix(u_df)
+def u_compute_similarity_visualization():
+    # Load or simulate binary data (replace this with your actual DataFrame)
+    np.random.seed(0)
+    u_df = pd.DataFrame(np.random.choice([0, 1], size=(20, 10)), columns=[f"Attr{i}" for i in range(10)])
 
-# Plot heatmaps
-plt.figure(figsize=(15, 4))
+    # Compute similarity matrices
+    jc = jaccard_matrix(u_df)
+    smc = smc_matrix(u_df)
+    cos = cosine_matrix(u_df)
 
-plt.subplot(1, 3, 1)
-sns.heatmap(jc, cmap='YlGnBu')
-plt.title("Jaccard Coefficient")
+    # Plot heatmaps
+    plt.figure(figsize=(15, 4))
 
-plt.subplot(1, 3, 2)
-sns.heatmap(smc, cmap='YlOrBr')
-plt.title("Simple Matching Coefficient")
+    plt.subplot(1, 3, 1)
+    sns.heatmap(jc, cmap='YlGnBu')
+    plt.title("Jaccard Coefficient")
 
-plt.subplot(1, 3, 3)
-sns.heatmap(cos, cmap='Greens')
-plt.title("Cosine Similarity")
+    plt.subplot(1, 3, 2)
+    sns.heatmap(smc, cmap='YlOrBr')
+    plt.title("Simple Matching Coefficient")
 
-plt.tight_layout()
-plt.show()
+    plt.subplot(1, 3, 3)
+    sns.heatmap(cos, cmap='Greens')
+    plt.title("Cosine Similarity")
+
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    u_compute_similarity_visualization()

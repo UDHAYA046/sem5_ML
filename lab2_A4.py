@@ -4,8 +4,8 @@ import numpy as np
 def u_explore_thyroid_dataset():
     """
     LOADS THE 'thyroid0387_UCI' DATASET AND PERFORMS EXPLORATORY DATA ANALYSIS
-    AS REQUIRED IN TASK A4 INCLUDING TYPE CHECKING, MISSING VALUES, RANGE,
-    OUTLIERS, AND BASIC STATS FOR NUMERIC ATTRIBUTES.
+    INCLUDING TYPE CHECKING, MISSING VALUE IDENTIFICATION, RANGE, OUTLIERS,
+    AND BASIC STATISTICS FOR NUMERIC ATTRIBUTES
     """
 
     # LOAD DATA FROM EXCEL WORKSHEET
@@ -14,20 +14,14 @@ def u_explore_thyroid_dataset():
         sheet_name="thyroid0387_UCI"
     )
 
-    # STRIP COLUMN NAMES TO REMOVE SPACES
+    # STRIP COLUMN NAMES TO REMOVE EXTRA SPACES
     u_df.columns = u_df.columns.str.strip()
 
     # REPLACE '?' WITH np.nan TO HANDLE MISSING VALUES
     pd.set_option('future.no_silent_downcasting', True)
     u_df = u_df.replace('?', np.nan)
-    
 
-
-    # DISPLAY ATTRIBUTE TYPE SUGGESTIONS (CLEAN FORMAT WITH DASHES)
-
-    print("\nATTRIBUTE TYPE SUGGESTIONS:\n")
-
-    # CATEGORIZE COLUMNS
+    # CATEGORIZE COLUMNS BASED ON OBSERVED PATTERNS
     u_summary = {
         "Numeric": ['Record ID', 'age', 'TSH', 'T3', 'TT4', 'T4U', 'FTI', 'TBG'],
         "Binary": [col for col in u_df.columns if set(u_df[col].dropna().unique()) <= {'f', 't'}],
@@ -35,7 +29,15 @@ def u_explore_thyroid_dataset():
         "Target": ['Condition']
     }
 
-    # CLEAN FORMATTED PRINTING
+    return u_df, u_summary
+
+def u_report_data_statistics(u_df, u_summary):
+    """
+    TAKES THE LOADED DATA AND ATTRIBUTE TYPES,
+    REPORTS MISSING VALUES, RANGES, MEANS, STD, OUTLIERS
+    """
+
+    print("\nATTRIBUTE TYPE SUGGESTIONS:\n")
     for u_type, u_cols in u_summary.items():
         for u_col in u_cols:
             if u_type == "Binary":
@@ -47,23 +49,18 @@ def u_explore_thyroid_dataset():
             else:
                 print(f"{u_col:<25} - Numeric")
 
-
-    # CHECK FOR MISSING VALUES
     print("\n MISSING VALUES PER COLUMN:")
     for u_col in u_df.columns:
         u_missing = u_df[u_col].isna().sum()
         if u_missing > 0:
             print(f" {u_col}: {u_missing} missing")
 
-    # IDENTIFY NUMERIC COLUMNS
+    # IDENTIFY AND CONVERT NUMERIC COLUMNS
     u_numeric_cols = ['age', 'TSH', 'T3', 'TT4', 'T4U', 'FTI', 'TBG']
     u_existing_numeric_cols = [col for col in u_numeric_cols if col in u_df.columns]
-
-    # CONVERT NUMERIC COLUMNS TO FLOAT
     for u_col in u_existing_numeric_cols:
         u_df[u_col] = pd.to_numeric(u_df[u_col], errors='coerce')
 
-    # RANGE, MEAN, VARIANCE AND OUTLIERS
     print("\n NUMERIC RANGE, MEAN, STD, OUTLIERS:")
     for u_col in u_existing_numeric_cols:
         u_data = u_df[u_col].dropna()
@@ -83,5 +80,6 @@ def u_explore_thyroid_dataset():
         print(f"     Min: {u_min}, Max: {u_max}, Mean: {u_mean}, Std Dev: {u_std}")
         print(f"     Outliers detected: {len(u_outliers)}")
 
-# RUN THE FUNCTION
-u_explore_thyroid_dataset()
+if __name__ == "__main__":
+    df, summary = u_explore_thyroid_dataset()
+    u_report_data_statistics(df, summary)

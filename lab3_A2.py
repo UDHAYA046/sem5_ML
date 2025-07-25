@@ -1,37 +1,35 @@
+# A2. Histogram + Stats for a Feature
+# Udhaya Sankari | Roll No: BL.EN.U4CSE23150
+
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Sample dataset: Each row represents a sample, and the last column represents the class label
-data = np.array([
-    [1.0, 2.0, 0],
-    [1.5, 1.8, 0],
-    [1.2, 1.9, 0],
-    [5.0, 8.0, 1],
-    [6.0, 9.0, 1],
-    [5.5, 8.5, 1]
-])
+# Load the CSV file (update path as needed)
+file_path = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
+df = pd.read_csv(file_path)
 
-# Select a feature to analyze (e.g., the first feature)
-feature = data[:, 0]  # Taking the first feature from the dataset
+# Choose the feature to analyze (e.g., 'pitch_std')
+ud_feature = 'pitch_std'
+ud_feature_data = df[ud_feature].dropna()  # Drop any NaN values
 
-# Calculate the mean and variance of the selected feature
-mean_feature = np.mean(feature)
-variance_feature = np.var(feature)
+# Calculate mean and variance
+ud_mean = np.mean(ud_feature_data)
+ud_variance = np.var(ud_feature_data)
 
-# Generate histogram data
-hist, bins = np.histogram(feature, bins=5)  # 5 buckets for the histogram
+# Print results
+print(f"=== Histogram Analysis for Feature: {ud_feature} ===")
+print(f"Mean of {ud_feature}: {ud_mean:.4f}")
+print(f"Variance of {ud_feature}: {ud_variance:.4f}")
 
-# Plotting the histogram
-plt.figure(figsize=(8, 5))
-plt.hist(feature, bins=5, alpha=0.7, color='blue', edgecolor='black')
-plt.title('Histogram of Selected Feature')
-plt.xlabel('Feature Value')
-plt.ylabel('Frequency')
-plt.axvline(mean_feature, color='red', linestyle='dashed', linewidth=1, label='Mean')
+# Generate histogram
+plt.figure(figsize=(8, 6))
+plt.hist(ud_feature_data, bins=10, color='skyblue', edgecolor='black')
+plt.axvline(ud_mean, color='red', linestyle='--', label=f"Mean = {ud_mean:.2f}")
+plt.title(f"Histogram of {ud_feature}")
+plt.xlabel(f"{ud_feature} values")
+plt.ylabel("Frequency")
 plt.legend()
-plt.grid(axis='y', alpha=0.75)
+plt.grid(True)
+plt.tight_layout()
 plt.show()
-
-# Print the results
-print("Mean of the selected feature:", mean_feature)
-print("Variance of the selected feature:", variance_feature)

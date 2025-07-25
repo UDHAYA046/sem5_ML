@@ -1,39 +1,29 @@
-# Udhaya Sankari | Roll No:BL.EN.U4CSE23150
-# Lab 3 – A1: Evaluate Intraclass Spread and Interclass Distance
+# Udhaya Sankari | Lab 3 | A1 – Intraclass Spread and Interclass Distance
 
 import pandas as pd
 import numpy as np
 
-#  Step 1: Load the extracted feature dataset
-ud_input_path = r"C:\Users\Udhaya\sem5_ML\features_lab3.csv"
-ud_df_features = pd.read_csv(ud_input_path)
+# Step 1: Load extracted feature dataset
+ud_df_feat = pd.read_csv("features_lab3.csv")
 
-#  Step 2: Select any two class labels to compare (edit this as needed)
-ud_class_label_column = 'label'  # make sure this column exists in your CSV
-ud_class_A = 0
-ud_class_B = 1
+# Step 2: Select two class labels for comparison (e.g., Class 0 and Class 1)
+ud_class0_data = ud_df_feat[ud_df_feat['label'] == 0].drop(columns=['filename', 'label'])
+ud_class1_data = ud_df_feat[ud_df_feat['label'] == 1].drop(columns=['filename', 'label'])
 
-#  Step 3: Separate feature vectors of the two classes (drop filename and label)
-ud_data_A = ud_df_features[ud_df_features[ud_class_label_column] == ud_class_A].drop(columns=['filename', ud_class_label_column])
-ud_data_B = ud_df_features[ud_df_features[ud_class_label_column] == ud_class_B].drop(columns=['filename', ud_class_label_column])
+# Step 3a: Calculate Centroid (Mean Vector) of each class
+ud_centroid0 = ud_class0_data.mean(axis=0)
+ud_centroid1 = ud_class1_data.mean(axis=0)
 
-#  Step 4a: Compute the centroid (mean) for each class
-ud_centroid_A = ud_data_A.mean(axis=0)
-ud_centroid_B = ud_data_B.mean(axis=0)
+# Step 3b: Calculate Intraclass Spread (Standard Deviation) of each class
+ud_spread0 = ud_class0_data.std(axis=0)
+ud_spread1 = ud_class1_data.std(axis=0)
 
-#  Step 4b: Compute the intraclass spread (standard deviation)
-ud_spread_A = ud_data_A.std(axis=0)
-ud_spread_B = ud_data_B.std(axis=0)
+# Step 3c: Calculate Interclass Distance (Euclidean Distance between centroids)
+ud_interclass_distance = np.linalg.norm(ud_centroid0 - ud_centroid1)
 
-# Step 4c: Compute the interclass Euclidean distance
-ud_interclass_dist = np.linalg.norm(ud_centroid_A - ud_centroid_B)
-
-# Step 5: Print results (in high-resolution friendly format)
-print("\n Udhaya Sankari | Lab 3 – A1: Intraclass and Interclass Analysis")
-print("\n Centroid Vector for Class", ud_class_A, ":\n", ud_centroid_A.to_string())
-print("\n Centroid Vector for Class", ud_class_B, ":\n", ud_centroid_B.to_string())
-
-print("\n Spread (Standard Deviation) for Class", ud_class_A, ":\n", ud_spread_A.to_string())
-print("\n Spread (Standard Deviation) for Class", ud_class_B, ":\n", ud_spread_B.to_string())
-
-print(f"\n Euclidean Distance Between Class {ud_class_A} and Class {ud_class_B} Centroids: {ud_interclass_dist:.4f}")
+# Step 4: Display Results
+print("🔹 Centroid for Class 0:\n", ud_centroid0)
+print("\n🔹 Centroid for Class 1:\n", ud_centroid1)
+print("\n📏 Intraclass Spread (Std Dev) for Class 0:\n", ud_spread0)
+print("\n📏 Intraclass Spread (Std Dev) for Class 1:\n", ud_spread1)
+print(f"\n📐 Euclidean Distance Between Class Centroids = {ud_interclass_distance:.4f}")

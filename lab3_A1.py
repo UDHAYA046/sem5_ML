@@ -5,10 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Step 1: Load the Excel data
-ud_file_path = "features_lab3"
+ud_file_path ='features_lab3.csv'
 ud_sheet_name = "features_lab3"
-ud_df_full = pd.read_excel(ud_file_path, sheet_name=ud_sheet_name)
-
+ud_df_full = pd.read_csv(ud_file_path)
 # Step 2: Drop 'filename' and separate class label
 ud_df_full = ud_df_full.drop(columns=['filename'])
 ud_class_column = 'class'

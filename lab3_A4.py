@@ -24,3 +24,10 @@ y_test.to_csv("test_labels.csv", index=False)
 print("Dataset split completed successfully.")
 print(f"Train size: {X_train.shape[0]} samples")
 print(f"Test size : {X_test.shape[0]} samples")
+
+# Save datasets to local files
+X_train.to_csv("X_train_lab3.csv", index=False)
+X_test.to_csv("X_test_lab3.csv", index=False)
+y_train.to_csv("y_train_lab3.csv", index=False)
+y_test.to_csv("y_test_lab3.csv", index=False)
+

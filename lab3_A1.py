@@ -1,29 +1,41 @@
-# Udhaya Sankari | Lab 3 | A1 – Intraclass Spread and Interclass Distance
+# Udhaya Sankari | Roll No: BL.EN.U4CSE23150
+# Lab 3 – A1: Intra-class feature spread (mean and standard deviation)
 
 import pandas as pd
-import numpy as np
+import matplotlib.pyplot as plt
 
-# Step 1: Load extracted feature dataset
-ud_df_feat = pd.read_csv("features_lab3.csv")
+# Load features file
+ud_file_path = "features_lab3.csv"  # Adjust path if needed
+ud_df_features = pd.read_csv(ud_file_path)
 
-# Step 2: Select two class labels for comparison (e.g., Class 0 and Class 1)
-ud_class0_data = ud_df_feat[ud_df_feat['label'] == 0].drop(columns=['filename', 'label'])
-ud_class1_data = ud_df_feat[ud_df_feat['label'] == 1].drop(columns=['filename', 'label'])
+# Drop 'filename' since it is not a feature
+ud_df_features_clean = ud_df_features.drop(columns=['filename'])
 
-# Step 3a: Calculate Centroid (Mean Vector) of each class
-ud_centroid0 = ud_class0_data.mean(axis=0)
-ud_centroid1 = ud_class1_data.mean(axis=0)
+# Calculate mean and standard deviation for each feature
+ud_feature_means = ud_df_features_clean.mean()
+ud_feature_stds = ud_df_features_clean.std()
 
-# Step 3b: Calculate Intraclass Spread (Standard Deviation) of each class
-ud_spread0 = ud_class0_data.std(axis=0)
-ud_spread1 = ud_class1_data.std(axis=0)
+# Print the results clearly
+print("===== Feature-wise Mean Values =====")
+print(ud_feature_means)
+print("\n===== Feature-wise Standard Deviations =====")
+print(ud_feature_stds)
 
-# Step 3c: Calculate Interclass Distance (Euclidean Distance between centroids)
-ud_interclass_distance = np.linalg.norm(ud_centroid0 - ud_centroid1)
+# Bar Plot: Mean and Standard Deviation
+ud_fig, ud_ax = plt.subplots(figsize=(10, 6))
+ud_x = range(len(ud_feature_means))
 
-# Step 4: Display Results
-print("🔹 Centroid for Class 0:\n", ud_centroid0)
-print("\n🔹 Centroid for Class 1:\n", ud_centroid1)
-print("\n📏 Intraclass Spread (Std Dev) for Class 0:\n", ud_spread0)
-print("\n📏 Intraclass Spread (Std Dev) for Class 1:\n", ud_spread1)
-print(f"\n📐 Euclidean Distance Between Class Centroids = {ud_interclass_distance:.4f}")
+ud_ax.bar([x - 0.2 for x in ud_x], ud_feature_means, width=0.4, label='Mean', color='skyblue')
+ud_ax.bar([x + 0.2 for x in ud_x], ud_feature_stds, width=0.4, label='Standard Deviation', color='salmon')
+
+ud_ax.set_xticks(list(ud_x))
+ud_ax.set_xticklabels(ud_feature_means.index, rotation=45)
+ud_ax.set_title("Intra-Class Feature Spread (Mean vs Std Dev)")
+ud_ax.set_ylabel("Value")
+ud_ax.legend()
+ud_ax.grid(True, linestyle='--', alpha=0.6)
+
+# Save high-resolution plot for print (300 DPI)
+plt.tight_layout()
+plt.savefig("A1_feature_spread.png", dpi=300)
+plt.show()

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Step 1: Load the Excel data
-ud_file_path = "Lab Session Data.xlsx"
+ud_file_path = "features_lab3.xlsx"
 ud_sheet_name = "Features"
 ud_df_full = pd.read_excel(ud_file_path, sheet_name=ud_sheet_name)
 

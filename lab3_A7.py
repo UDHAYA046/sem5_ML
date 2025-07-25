@@ -37,6 +37,11 @@ sample_index = 0
 test_vector = X_test.iloc[sample_index].values.reshape(1, -1)
 predicted_class = neigh.predict(test_vector)
 
+# Suppress warning by keeping feature names
+test_vector_df = pd.DataFrame([X_test.iloc[sample_index]], columns=X.columns)
+predicted_class = neigh.predict(test_vector_df)
+
+
 print("\n=== Prediction for a Single Test Vector ===")
 print("Test Vector Index:", sample_index)
 print("Predicted Class  :", predicted_class[0])

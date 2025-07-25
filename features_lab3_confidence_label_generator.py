@@ -1,9 +1,18 @@
 import pandas as pd
 
-# Load your features CSV
-ud_df_full = pd.read_csv("C:/Users/Udhaya/sem5_ML/features_lab3.csv")  # Update path if needed
+# Load the CSV
+file_path = "C:/Users/Udhaya/sem5_ML/features_lab3.csv"  # Adjust path if needed
+ud_df_full = pd.read_csv(file_path)
 
-# Define the rule-based confidence labeling function
+# Print feature ranges for debugging
+print("Feature Value Ranges:")
+print("mfcc1       :", ud_df_full['mfcc1'].min(), "to", ud_df_full['mfcc1'].max())
+print("rms         :", ud_df_full['rms'].min(), "to", ud_df_full['rms'].max())
+print("zcr         :", ud_df_full['zcr'].min(), "to", ud_df_full['zcr'].max())
+print("pitch_std   :", ud_df_full['pitch_std'].min(), "to", ud_df_full['pitch_std'].max())
+print("silence_pct :", ud_df_full['silence_pct'].min(), "to", ud_df_full['silence_pct'].max())
+
+# Define rule-based confidence classification function
 def assign_confidence(row):
     mfcc1 = row['mfcc1']
     rms = row['rms']
@@ -11,31 +20,26 @@ def assign_confidence(row):
     pitch_std = row['pitch_std']
     silence_pct = row['silence_pct']
 
-    # Class 5: Very High Confidence
-    if (rms > 0.04 and pitch_std < 15 and silence_pct < 5 and zcr > 0.09 and mfcc1 > -200):
-        return 5
-
-    # Class 4: High Confidence
-    elif (rms > 0.03 and pitch_std < 25 and silence_pct < 10 and zcr > 0.08 and mfcc1 > -300):
-        return 4
-
-    # Class 3: Moderate Confidence
-    elif (rms > 0.025 and pitch_std < 35 and silence_pct < 20 and zcr > 0.07 and mfcc1 > -400):
-        return 3
-
-    # Class 2: Low Confidence
-    elif (rms > 0.015 and pitch_std < 45 and silence_pct < 30 and zcr > 0.05):
-        return 2
-
-    # Class 1: Very Low Confidence (fallback case)
+    # Adjusted thresholds based on realistic feature values
+    if rms > 0.012 and pitch_std < 5 and silence_pct < 10 and zcr > 0.05 and mfcc1 > -500:
+        return 5  # Very High Confidence
+    elif rms > 0.01 and pitch_std < 8 and silence_pct < 20 and zcr > 0.045 and mfcc1 > -600:
+        return 4  # High Confidence
+    elif rms > 0.008 and pitch_std < 12 and silence_pct < 35 and zcr > 0.04 and mfcc1 > -700:
+        return 3  # Moderate Confidence
+    elif rms > 0.005 and pitch_std < 18 and silence_pct < 50 and zcr > 0.02:
+        return 2  # Low Confidence
     else:
-        return 1
+        return 1  # Very Low Confidence
 
-# Apply the labeling function
+# Apply the function to label the data
 ud_df_full['class'] = ud_df_full.apply(assign_confidence, axis=1)
 
-# Save the labeled DataFrame to a new CSV
+# Save to new CSV
 output_path = "C:/Users/Udhaya/sem5_ML/features_lab3_labeled.csv"
 ud_df_full.to_csv(output_path, index=False)
 
-print(f" Class labels assigned and saved to '{output_path}'")
+# Display result counts
+print("\n✅ Class labeling completed.")
+print(ud_df_full['class'].value_counts())
+print(f"\nSaved labeled file to: {output_path}")

@@ -32,7 +32,7 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | `lab3_Q1.py`   | Calculate intraclass spread (mean and std) for each class based on feature vectors                       |
 | `lab3_Q2.py`   | Compute interclass distance between class centroids using Euclidean and Minkowski metrics               |
 | `lab3_Q3.py`   | Visualize histogram of feature value distribution per class along with mean and variance                 |
-| `lab3_Q4.py`   | Plot Minkowski distance between two feature vectors for `r` varying from 1 to 10                          |
+| `lab3_Q4.py`   | Plot Minkowski distance between two feature vectors for `r` varying from 1 to 10.                          |
 
 
 

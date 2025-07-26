@@ -17,7 +17,8 @@ def has_any_py_change():
 
     for root, dirs, files in os.walk(WATCH_FOLDER):
         for file in files:
-            if file.endswith(".py"):
+            if file.endswith((".py", ".md")):
+
                 full_path = os.path.join(root, file)
                 mod_time = os.path.getmtime(full_path)
 
@@ -28,14 +29,14 @@ def has_any_py_change():
 
 while True:
     if has_any_py_change():
-        print("🔁 Detected change in .py files. Auto-pushing to GitHub...")
+        print(" Detected change in .py files. Auto-pushing to GitHub...")
 
         try:
             subprocess.run(["git", "add", "."], cwd=WATCH_FOLDER)
             subprocess.run(["git", "commit", "-m", "Auto-push new or updated Python file"], cwd=WATCH_FOLDER)
             subprocess.run(["git", "push"], cwd=WATCH_FOLDER)
-            print("✅ Pushed successfully.")
+            print(" Pushed successfully.")
         except Exception as e:
-            print("❌ Error during push:", e)
+            print(" Error during push:", e)
 
     time.sleep(CHECK_INTERVAL)

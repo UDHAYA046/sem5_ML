@@ -20,6 +20,20 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | `lab2_A7.py`  |Compute JC, SMC, COS on first 20 observation vectors and display all in heatmaps        |
 | `lab2_A8.py`  | Impute missing values using mean, median, or mode depending on type and outliers     |
 | `lab2_A9.py`  | Verify and display that all missing values are now resolved (post A8)                           |
+| `lab3_A1.py`  | Load feature vectors with class labels, drop filename column, and split dataset for classification tasks           |
+| `lab3_A2.py`  | Train a k-Nearest Neighbors (kNN) classifier (k=3) and predict test set labels and individual sample classes        |
+| `lab3_A3.py`  | Vary `k` from 1 to 11 in kNN to compare accuracy trends and visualize the effect of `k` with a line plot            |
+| `lab3_A4.py`  | Compute confusion matrix and derive precision, recall, and F1-score for both training and test sets                |
+| `lab3_A5.py`  | Generate and compare histogram and true PDF of normally distributed random values with KDE curve                  |
+| `lab3_A6.py`  | Apply different distance metrics in kNN (e.g., Manhattan, Chebyshev) and observe classification behavior changes   |
+| `lab3_A7.py`  | Plot AUROC curve for binary classification (Class 1 vs Class 2) using kNN and interpret AUC values                |
+| `lab3_A8.py`  | Compare performance between manually developed kNN and package-based kNN classifier implementation                |
+| `lab3_A9.py`   | Evaluate kNN classifier performance across training and test sets with learning outcome (underfit/regularfit/overfit) |
+| `lab3_Q1.py`   | Calculate intraclass spread (mean and std) for each class based on feature vectors                       |
+| `lab3_Q2.py`   | Compute interclass distance between class centroids using Euclidean and Minkowski metrics               |
+| `lab3_Q3.py`   | Visualize histogram of feature value distribution per class along with mean and variance                 |
+| `lab3_Q4.py`   | Plot Minkowski distance between two feature vectors for `r` varying from 1 to 10                          |
+
 
 
 ## ✅ Features

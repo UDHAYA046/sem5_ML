@@ -71,9 +71,9 @@ def visualize_knn_decision_regions(X_train, y_train, k_list, save_path):
 
 # Main driver block
 if __name__ == "__main__":
-    csv_path ="C:/Users/Udhaya/sem5_ML/features_lab3_labeled.csv"
+    csv_path = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
+    output_path = r"C:\Users\Udhaya\sem5_ML\lab4_output_figures"
 
-    output_path ="C:\Users\Udhaya\sem5_ML\lab4_output_figures"
     os.makedirs(output_path, exist_ok=True)
 
     X, y = load_filtered_data(csv_path)

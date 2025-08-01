@@ -8,8 +8,9 @@ from sklearn.neighbors import KNeighborsClassifier
 #  Load and filter dataset (only class 1 and 2)
 def fetch_filtered_dataset(csv_file):
     df = pd.read_csv(csv_file)
-    filtered_df = df[df['confidence_level'].isin([1, 2])]
-    features = filtered_df[['mfcc1', 'pitch_std']].values
+    filtered_df = df[df['class'].isin([1, 2])]
+    labels = filtered_df['class'].values
+
     labels = filtered_df['confidence_level'].values
     return features, labels
 

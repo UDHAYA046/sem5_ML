@@ -33,6 +33,13 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | `lab3_Q2.py`   | Compute interclass distance between class centroids using Euclidean and Minkowski metrics               |
 | `lab3_Q3.py`   | Visualize histogram of feature value distribution per class along with mean and variance                 |
 | `lab3_Q4.py`   | Plot Minkowski distance between two feature vectors for `r` varying from 1 to 10                          |
+| `lab4_A1.py`  | Generate 2D synthetic training data with 20 points labeled as Class 0/1     |
+| `lab4_A2.py`  | Train kNN classifier on synthetic data and classify 10,000 test points      |
+| `lab4_A3.py`  | Visualize the decision boundary of kNN for various `k` values (1–6)         |
+| `lab4_A4.py`  | Split project dataset and visualize training and test data distribution     |
+| `lab4_A5.py`  | Plot decision boundaries on project data for various `k` values             |
+| `lab4_A6.py`  | Evaluate classification with confusion matrices (train/test) and metrics    |
+| `lab4_A7.py`  | Perform hyperparameter tuning using GridSearchCV / RandomizedSearchCV to find optimal `k` |
 
 
 

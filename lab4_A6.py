@@ -1,57 +1,82 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import LabelEncoder
 import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 
-# A3: Load and preprocess the dataset
-def load_and_filter_data(csv_path, classes, features):
+# Function to load and filter dataset
+def load_filtered_data(csv_path):
     df = pd.read_csv(csv_path)
-    df_filtered = df[df['class'].isin(classes)].copy()
-    X = df_filtered[features].values
-    y = df_filtered['class'].values
-    label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(y)
-    return X, y_encoded
+    df = df[df['confidence_level'].isin([1, 2])]  # Only retain class 1 and 2
+    X = df[['mfcc1', 'pitch_std']].values
+    y = df['confidence_level'].values
+    return X, y
 
-# A4: Create grid for decision boundary plotting
-def create_decision_grid(x_min, x_max, y_min, y_max, step=0.1):
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, step),
-                         np.arange(y_min, y_max, step))
-    return xx, yy, np.c_[xx.ravel(), yy.ravel()]
+# Function to split dataset
+def get_train_test_split(X, y, test_ratio=0.3, seed=42):
+    return train_test_split(X, y, test_size=test_ratio, random_state=seed)
 
-# A5: Train model, predict and plot decision region
-def train_plot_knn(X, y, xx, yy, grid_points, k_value, save_path):
-    model = KNeighborsClassifier(n_neighbors=k_value)
-    model.fit(X, y)
-    Z = model.predict(grid_points).reshape(xx.shape)
-
-    plt.figure(figsize=(6, 5), dpi=300)
-    plt.contourf(xx, yy, Z, alpha=0.4, cmap='coolwarm')
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap='coolwarm', edgecolor='k', s=30)
-    plt.xlabel("mfcc1")
-    plt.ylabel("pitch_std")
-    plt.title(f"A6 Decision Boundary (k={k_value})")
-    os.makedirs(save_path, exist_ok=True)
-    plt.savefig(f"{save_path}/a6_decision_region_k{k_value}.png", bbox_inches='tight')
+# Function to plot training data
+def plot_training(X_train, y_train, save_path):
+    plt.figure()
+    for label in np.unique(y_train):
+        subset = X_train[y_train == label]
+        plt.scatter(subset[:, 0], subset[:, 1], label=f'Class {label}', edgecolor='k')
+    plt.xlabel('mfcc1')
+    plt.ylabel('pitch_std')
+    plt.title('A3 Training Data')
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'A6_A3_training_data.png'))
     plt.close()
 
-# ---------------- MAIN PROGRAM ----------------
+# Function to plot test data
+def plot_test(X_test, y_test, save_path):
+    plt.figure()
+    for label in np.unique(y_test):
+        subset = X_test[y_test == label]
+        plt.scatter(subset[:, 0], subset[:, 1], label=f'Class {label}', edgecolor='k')
+    plt.xlabel('mfcc1')
+    plt.ylabel('pitch_std')
+    plt.title('A4 Test Data')
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'A6_A4_test_data.png'))
+    plt.close()
+
+# Function to plot decision boundaries for multiple k
+def visualize_knn_decision_regions(X_train, y_train, k_list, save_path):
+    x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
+    y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 500),
+                         np.linspace(y_min, y_max, 500))
+
+    for k in k_list:
+        classifier = KNeighborsClassifier(n_neighbors=k)
+        classifier.fit(X_train, y_train)
+        Z = classifier.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+
+        plt.figure()
+        plt.contourf(xx, yy, Z, alpha=0.4, cmap=plt.cm.RdBu)
+        for label in np.unique(y_train):
+            subset = X_train[y_train == label]
+            plt.scatter(subset[:, 0], subset[:, 1], label=f'Class {label}', edgecolor='k')
+        plt.xlabel('mfcc1')
+        plt.ylabel('pitch_std')
+        plt.title(f'A5: Decision Region using kNN (k={k})')
+        plt.legend()
+        filename = f'A6_A5_decision_boundary_k{k}.png'
+        plt.savefig(os.path.join(save_path, filename))
+        plt.close()
+
+# Main driver block
 if __name__ == "__main__":
-    # Inputs
-    csv_path = "C:/Users/Udhaya/sem5_ML/features_lab3_labeled.csv"
-    output_dir = "C:/Users/Udhaya/sem5_ML/lab4_output_figures"
-    selected_classes = [1, 2]
-    selected_features = ["mfcc1", "pitch_std"]
-    k_values = [1, 2, 4]
+    csv_path = "/mnt/data/features_lab3_labeled.csv"
+    output_path = "/mnt/data/output"
+    os.makedirs(output_path, exist_ok=True)
 
-    # Load data (A3)
-    X_data, y_data = load_and_filter_data(csv_path, selected_classes, selected_features)
-
-    # Create grid (A4)
-    xx_mesh, yy_mesh, mesh_points = create_decision_grid(x_min=0, x_max=10, y_min=0, y_max=11)
-
-    # Train and plot (A5)
-    for k in k_values:
-        train_plot_knn(X_data, y_data, xx_mesh, yy_mesh, mesh_points, k, output_dir)
+    X, y = load_filtered_data(csv_path)
+    X_train, X_test, y_train, y_test = get_train_test_split(X, y)
+    plot_training(X_train, y_train, output_path)
+    plot_test(X_test, y_test, output_path)
+    visualize_knn_decision_regions(X_train, y_train, k_list=[2, 4, 5, 6], save_path=output_path)

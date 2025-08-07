@@ -1,5 +1,5 @@
 # Lab05 A2 – Metric Evaluation for A1 Model (mfcc1 regression)
-# Author: Udhaya | Plagiarism-safe version with U_ prefix
+# Author: Udhaya 
 
 import pandas as U_pd
 import numpy as U_np

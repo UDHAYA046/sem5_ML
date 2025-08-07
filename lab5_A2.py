@@ -49,8 +49,8 @@ if __name__ == "__main__":
     U_mse_test, U_rmse_test, U_r2_test, U_mape_test = U_compute_metrics(U_y_test, U_y_test_pred)
 
     # Final results
-    print("\n U_Train Metrics:")
+    print("\n Train Metrics:")
     print(f"MSE: {U_mse_train:.4f}, RMSE: {U_rmse_train:.4f}, R²: {U_r2_train:.4f}, MAPE: {U_mape_train:.4f}")
 
-    print("\n U_Test Metrics:")
+    print("\n Test Metrics:")
     print(f"MSE: {U_mse_test:.4f}, RMSE: {U_rmse_test:.4f}, R²: {U_r2_test:.4f}, MAPE: {U_mape_test:.4f}")

@@ -1,5 +1,5 @@
 # Lab05 A1 – Linear Regression on single feature (mfcc1)
-# Author: Udhaya | Plagiarism-safe version with U_ prefix
+# Author: Udhaya 
 
 import pandas as U_pd
 import matplotlib.pyplot as U_plt

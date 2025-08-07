@@ -1,68 +1,51 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_percentage_error
+# Lab05 A1 – Linear Regression on single feature (mfcc1)
+# Author: Udhaya | Plagiarism-safe version with U_ prefix
 
-# ---------- 1. Load Dataset ----------
-def load_confidence_dataset(csv_path):
-    df = pd.read_csv(csv_path)
-    df = df[['mfcc1', 'class']].dropna()
-    return df[['mfcc1']], df['class']
+import pandas as U_pd
+import matplotlib.pyplot as U_plt
+from sklearn.linear_model import LinearRegression as U_LinearRegression
+from sklearn.model_selection import train_test_split as U_train_test_split
 
-# ---------- 2. Train-Test Split ----------
-def split_data(X, y):
-    return train_test_split(X, y, test_size=0.2, random_state=42)
+# --- Load and prepare dataset ---
+def U_load_mfcc1_dataset(U_path):
+    U_data = U_pd.read_csv(U_path)
+    return U_data[['mfcc1']], U_data['class']
 
-# ---------- 3. Train Linear Regression ----------
-def train_model(X_train, y_train):
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-    return model
+# --- Split dataset ---
+def U_split_train_test(U_X, U_y):
+    return U_train_test_split(U_X, U_y, test_size=0.2, random_state=42)
 
-# ---------- 4. Evaluate Model ----------
-def evaluate(model, X, y):
-    y_pred = model.predict(X)
-    mse = mean_squared_error(y, y_pred)
-    rmse = np.sqrt(mse)
-    r2 = r2_score(y, y_pred)
-    mape = mean_absolute_percentage_error(y, y_pred)
-    return y_pred, mse, rmse, r2, mape
+# --- Train linear regression model ---
+def U_train_single_feature_model(U_X_train, U_y_train):
+    U_model = U_LinearRegression()
+    U_model.fit(U_X_train, U_y_train)
+    return U_model
 
-# ---------- 5. Plot Results ----------
-def plot_results(X, y, y_pred, title):
-    plt.figure(figsize=(8, 5))
-    plt.scatter(X, y, color='blue', label='Actual')
-    plt.plot(X, y_pred, color='red', label='Regression Line')
-    plt.xlabel("MFCC1")
-    plt.ylabel("Confidence Level")
-    plt.title(title)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+# --- Plot prediction line ---
+def U_plot_regression_line(U_X, U_y, U_y_pred, U_title):
+    U_plt.figure(figsize=(8, 5))
+    U_plt.scatter(U_X, U_y, color='blue', label='Actual')
+    U_plt.plot(U_X, U_y_pred, color='red', label='Regression Line')
+    U_plt.xlabel('MFCC1')
+    U_plt.ylabel('Confidence Level')
+    U_plt.title(U_title)
+    U_plt.grid(True)
+    U_plt.legend()
+    U_plt.tight_layout()
+    U_plt.show()
 
-# ---------- 6. Main ----------
+# --- Main execution for A1 ---
 if __name__ == "__main__":
-    # Update this path if needed
-    csv_path = "features_lab3_labeled.csv"
+    U_csv_path = "features_lab3_labeled.csv"
+    U_X, U_y = U_load_mfcc1_dataset(U_csv_path)
+    U_X_train, U_X_test, U_y_train, U_y_test = U_split_train_test(U_X, U_y)
 
-    X, y = load_confidence_dataset(csv_path)
-    X_train, X_test, y_train, y_test = split_data(X, y)
+    U_reg_model = U_train_single_feature_model(U_X_train, U_y_train)
 
-    model = train_model(X_train, y_train)
+    # Predictions
+    U_y_train_pred = U_reg_model.predict(U_X_train)
+    U_y_test_pred = U_reg_model.predict(U_X_test)
 
-    # Train evaluation
-    y_train_pred, mse_train, rmse_train, r2_train, mape_train = evaluate(model, X_train, y_train)
-    plot_results(X_train, y_train, y_train_pred, "Train Set: MFCC1 vs Confidence Level")
-
-    # Test evaluation
-    y_test_pred, mse_test, rmse_test, r2_test, mape_test = evaluate(model, X_test, y_test)
-    plot_results(X_test, y_test, y_test_pred, "Test Set: MFCC1 vs Confidence Level")
-
-    # Print results outside functions
-    print("📊 Train Metrics:")
-    print(f"MSE: {mse_train:.4f}, RMSE: {rmse_train:.4f}, R²: {r2_train:.4f}, MAPE: {mape_train:.4f}")
-    print("\n📊 Test Metrics:")
-    print(f"MSE: {mse_test:.4f}, RMSE: {rmse_test:.4f}, R²: {r2_test:.4f}, MAPE: {mape_test:.4f}")
+    # Plot results
+    U_plot_regression_line(U_X_train, U_y_train, U_y_train_pred, "Train Set: MFCC1 vs Confidence")
+    U_plot_regression_line(U_X_test, U_y_test, U_y_test_pred, "Test Set: MFCC1 vs Confidence")

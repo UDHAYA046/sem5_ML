@@ -40,6 +40,14 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | `lab4_A5.py`  | Plot decision boundaries on project data for various `k` values             |
 | `lab4_A6.py`  | Evaluate classification with confusion matrices (train/test) and metrics    |
 | `lab4_A7.py`  | Perform hyperparameter tuning using GridSearchCV / RandomizedSearchCV to find optimal `k` |
+| `lab5_A1.py`  | Train linear regression model using `mfcc1` to predict confidence level                        |
+| `lab5_A2.py`  | Evaluate A1 model using MSE, RMSE, R², and MAPE for train and test sets                        |
+| `lab5_A3.py`  | Train and evaluate linear regression using all features (multivariate regression)              |
+| `lab5_A4.py`  | Perform K-Means clustering with `k = 2` using all features, print cluster labels and centers    |
+| `lab5_A5.py`  | Evaluate clustering (k=2) using Silhouette Score, Calinski-Harabasz Score, and DB Index        |
+| `lab5_A6.py`  | Perform clustering for `k = 2 to 10`, plot Silhouette, CH, and DB scores separately             |
+| `lab5_A7.py`  | Generate Elbow Plot using Inertia to determine the optimal number of clusters (`k`)            |
+
 
 
 

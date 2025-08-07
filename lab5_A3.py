@@ -68,8 +68,8 @@ if __name__ == "__main__":
     U_mse_ts, U_rmse_ts, U_r2_ts, U_mape_ts = U_calculate_regression_metrics(U_y_test, U_y_test_pred)
 
     # Print results
-    print("\n U_Train Metrics (All Features):")
+    print("\n Train Metrics (All Features):")
     print(f"MSE: {U_mse_tr:.4f} | RMSE: {U_rmse_tr:.4f} | R²: {U_r2_tr:.4f} | MAPE: {U_mape_tr:.4f}")
 
-    print("\n U_Test Metrics (All Features):")
+    print("\n Test Metrics (All Features):")
     print(f"MSE: {U_mse_ts:.4f} | RMSE: {U_rmse_ts:.4f} | R²: {U_r2_ts:.4f} | MAPE: {U_mape_ts:.4f}")

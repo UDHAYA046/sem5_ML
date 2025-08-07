@@ -1,5 +1,5 @@
-# Lab05 A6 – Cluster Evaluation for Multiple k Values (2 to 10)
-# Author: Udhaya
+# Lab05 A6 – Cluster Evaluation (Separate Graphs for Silhouette, CH, DB)
+# Author: Udhaya 
 
 import pandas as U_pd
 import matplotlib.pyplot as U_plt
@@ -35,34 +35,14 @@ def U_evaluate_multiple_k(U_data, U_k_min=2, U_k_max=10):
 
     return U_k_values, U_sil_scores, U_ch_scores, U_db_indices
 
-# ---------------- 3. Plotting ----------------
-def U_plot_clustering_metrics(U_k_vals, U_sil_vals, U_ch_vals, U_db_vals):
-    U_plt.figure(figsize=(12, 6))
-
-    # Silhouette Score
-    U_plt.subplot(1, 3, 1)
-    U_plt.plot(U_k_vals, U_sil_vals, marker='o', color='blue')
-    U_plt.title("Silhouette Score vs k")
+# ---------------- 3. Plot Each Graph Separately ----------------
+def U_plot_individual_graph(U_k_vals, U_y_vals, U_title, U_y_label, U_color):
+    U_plt.figure(figsize=(8, 5))
+    U_plt.plot(U_k_vals, U_y_vals, marker='o', color=U_color)
+    U_plt.title(U_title)
     U_plt.xlabel("k")
-    U_plt.ylabel("Silhouette Score")
+    U_plt.ylabel(U_y_label)
     U_plt.grid(True)
-
-    # Calinski-Harabasz Score
-    U_plt.subplot(1, 3, 2)
-    U_plt.plot(U_k_vals, U_ch_vals, marker='o', color='green')
-    U_plt.title("CH Score vs k")
-    U_plt.xlabel("k")
-    U_plt.ylabel("Calinski-Harabasz Score")
-    U_plt.grid(True)
-
-    # Davies-Bouldin Index
-    U_plt.subplot(1, 3, 3)
-    U_plt.plot(U_k_vals, U_db_vals, marker='o', color='red')
-    U_plt.title("DB Index vs k")
-    U_plt.xlabel("k")
-    U_plt.ylabel("Davies-Bouldin Index")
-    U_plt.grid(True)
-
     U_plt.tight_layout()
     U_plt.show()
 
@@ -73,8 +53,11 @@ if __name__ == "__main__":
 
     U_k_vals, U_sil_vals, U_ch_vals, U_db_vals = U_evaluate_multiple_k(U_X, 2, 10)
 
-    print("\n Clustering Evaluation for k = 2 to 10:")
+    print("\n U_Clustering Evaluation for k = 2 to 10:")
     for i, k in enumerate(U_k_vals):
         print(f"k = {k}: Silhouette = {U_sil_vals[i]:.4f}, CH = {U_ch_vals[i]:.2f}, DB = {U_db_vals[i]:.4f}")
 
-    U_plot_clustering_metrics(U_k_vals, U_sil_vals, U_ch_vals, U_db_vals)
+    # Plot each metric separately
+    U_plot_individual_graph(U_k_vals, U_sil_vals, "Silhouette Score vs k", "Silhouette Score", "blue")
+    U_plot_individual_graph(U_k_vals, U_ch_vals, "Calinski-Harabasz Score vs k", "CH Score", "green")
+    U_plot_individual_graph(U_k_vals, U_db_vals, "Davies-Bouldin Index vs k", "DB Index", "red")

@@ -1,7 +1,15 @@
-# U_Lab07_A2.py
-# Lab 07 – A2: Hyperparameter Tuning with RandomizedSearchCV
+# U_Lab07_A2.py  — stable A2 with safe CV folds, serial search, and numeric cleaning
+# Rules followed:
+#   • All functions defined BEFORE __main__
+#   • Every name uses U_ prefix
+#   • No prints inside functions (only in __main__)
+#   • Uses your paths; saves all outputs in your folder
 
+# ---- cap BLAS/OMP threads BEFORE sklearn imports to avoid worker crashes ----
 import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,8 +33,8 @@ U_FEATURES  = ['mfcc1', 'rms', 'zcr', 'pitch_std', 'silence_pct']
 U_TARGET    = 'class'
 U_SEED      = 42
 U_TEST_SIZE = 0.30
-U_N_ITER    = 10
-U_CV_FOLDS  = 3
+U_N_ITER    = 8             # keep light to avoid RAM spikes
+U_CV_FOLDS  = 3             # requested folds (will be made safe per class counts)
 # --------------------------------------------------------------------------
 
 
@@ -38,18 +46,19 @@ def U_load_dataframe(csv_path: str) -> pd.DataFrame:
 
 def U_select_and_clean_features(df: pd.DataFrame, feature_cols: list, target_col: str):
     """
-    Select given features and target, coerce features to numeric,
-    and impute missing values with column means.
+    Select features/target, coerce features to numeric, fix inf/NaN.
     Returns X (DataFrame) and y (Series).
     """
-    # keep only columns that exist
     U_present = [c for c in feature_cols if c in df.columns]
     U_X = df[U_present].copy()
     U_y = df[target_col].copy()
 
-    # numeric coercion + mean impute (handles accidental strings)
+    # numeric coercion
     for U_c in U_X.columns:
         U_X[U_c] = pd.to_numeric(U_X[U_c], errors="coerce")
+
+    # replace inf, then mean-impute
+    U_X = U_X.replace([np.inf, -np.inf], np.nan)
     U_X = U_X.fillna(U_X.mean(numeric_only=True))
     return U_X, U_y
 
@@ -57,7 +66,6 @@ def U_select_and_clean_features(df: pd.DataFrame, feature_cols: list, target_col
 def U_filter_rare_classes(X: pd.DataFrame, y: pd.Series, min_count: int = 2):
     """
     Keep only classes with at least 'min_count' samples (needed for stratify/CV).
-    Returns filtered X, y.
     """
     U_counts = y.value_counts()
     U_valid = U_counts[U_counts >= min_count].index
@@ -70,25 +78,37 @@ def U_split_data(X: pd.DataFrame, y: pd.Series, test_size: float, seed: int):
     return train_test_split(X, y, test_size=test_size, random_state=seed, stratify=y)
 
 
+def U_safe_cv_folds(y_train: pd.Series, requested_folds: int = 3) -> int:
+    """
+    Choose a CV fold count that every class in TRAIN can support.
+    Ensures >=2 folds and <= requested_folds.
+    """
+    U_min_per_class = int(y_train.value_counts().min())
+    return max(2, min(requested_folds, U_min_per_class))
+
+
 def U_build_candidates(seed: int):
     """
     Build estimators and their RandomizedSearch spaces.
-    KNN + SVM are wrapped with StandardScaler via Pipeline.
+    KNN + SVM use StandardScaler via Pipeline.
+    RF single-threaded to reduce RAM spikes.
     """
     U_knn = Pipeline([("U_scale", StandardScaler()), ("U_clf", KNeighborsClassifier())])
     U_svm = Pipeline([("U_scale", StandardScaler()), ("U_clf", SVC())])
     U_dt  = DecisionTreeClassifier(random_state=seed)
-    U_rf  = RandomForestClassifier(random_state=seed)
+    U_rf  = RandomForestClassifier(random_state=seed, n_jobs=1)  # single-threaded
 
+    # Light, stable spaces
     U_knn_params = {
         'U_clf__n_neighbors': np.arange(1, 15),
         'U_clf__weights': ['uniform', 'distance'],
-        'U_clf__metric': ['euclidean', 'manhattan', 'minkowski']
+        'U_clf__metric': ['minkowski'],
+        # 'U_clf__p': [1, 2],  # enable if you want Manhattan/Euclidean toggle
     }
     U_svm_params = {
         'U_clf__C': [0.1, 1, 10, 50, 100],
         'U_clf__gamma': ['scale', 'auto'],
-        'U_clf__kernel': ['linear', 'rbf', 'poly']
+        'U_clf__kernel': ['rbf', 'linear']  # keep 'poly' out to stay light
     }
     U_dt_params = {
         'max_depth': [None, 5, 10, 20],
@@ -101,19 +121,18 @@ def U_build_candidates(seed: int):
         'min_samples_split': [2, 5, 10]
     }
 
-    U_candidates = {
+    return {
         "KNN": (U_knn, U_knn_params),
         "SVM": (U_svm, U_svm_params),
         "DecisionTree": (U_dt, U_dt_params),
         "RandomForest": (U_rf, U_rf_params),
     }
-    return U_candidates
 
 
 def U_tune_model(estimator, param_grid, Xtr, ytr, n_iter: int, cv_folds: int, seed: int):
     """
     Run RandomizedSearchCV and return the fitted tuner.
-    (No printing here; caller inspects attributes.)
+    Serial execution + small search space to avoid worker crashes.
     """
     U_tuner = RandomizedSearchCV(
         estimator=estimator,
@@ -121,8 +140,11 @@ def U_tune_model(estimator, param_grid, Xtr, ytr, n_iter: int, cv_folds: int, se
         n_iter=n_iter,
         cv=cv_folds,
         random_state=seed,
-        n_jobs=-1,
-        return_train_score=True
+        n_jobs=1,           # strictly serial
+        pre_dispatch=1,     # do not oversubscribe
+        return_train_score=True,
+        error_score=np.nan, # if a fit fails, keep going
+        verbose=1
     )
     U_tuner.fit(Xtr, ytr)
     return U_tuner
@@ -196,7 +218,6 @@ def U_save_final_bar(out_dir: str, df: pd.DataFrame):
 
 # --------------------------------- MAIN ----------------------------------
 if __name__ == "__main__":
-    # ensure paths exist / are valid
     os.makedirs(U_OUT_DIR, exist_ok=True)
     assert os.path.exists(U_DATA_PATH), f"CSV not found at: {U_DATA_PATH}"
 
@@ -205,8 +226,9 @@ if __name__ == "__main__":
     U_X, U_y = U_select_and_clean_features(U_df, U_FEATURES, U_TARGET)
     U_X, U_y = U_filter_rare_classes(U_X, U_y, min_count=2)
 
-    # 2) Split data (stratified)
+    # 2) Split data (stratified) and choose safe CV folds based on TRAIN
     U_Xtr, U_Xte, U_ytr, U_yte = U_split_data(U_X, U_y, U_TEST_SIZE, U_SEED)
+    U_CV_SAFE = U_safe_cv_folds(U_ytr, requested_folds=U_CV_FOLDS)
 
     # 3) Build models + search spaces
     U_candidates = U_build_candidates(U_SEED)
@@ -214,7 +236,7 @@ if __name__ == "__main__":
     # 4) Tune each model, evaluate, and save artifacts
     U_rows = []
     for U_name, (U_est, U_space) in U_candidates.items():
-        U_tuner = U_tune_model(U_est, U_space, U_Xtr, U_ytr, U_N_ITER, U_CV_FOLDS, U_SEED)
+        U_tuner = U_tune_model(U_est, U_space, U_Xtr, U_ytr, U_N_ITER, U_CV_SAFE, U_SEED)
         U_summary, U_report_text = U_eval_on_test(U_tuner, U_Xte, U_yte)
         U_save_text_report(U_OUT_DIR, U_name, U_summary["BestParams"], U_report_text)
         U_save_cv_plot(U_OUT_DIR, U_name, U_tuner)
@@ -224,7 +246,8 @@ if __name__ == "__main__":
     U_csv_path, U_perf_df = U_save_summary_table(U_OUT_DIR, U_rows)
     U_fig_path = U_save_final_bar(U_OUT_DIR, U_perf_df)
 
-    # 6) Console summary (allowed here)
+    # 6) Console summary
+    print("CV folds used:", U_CV_SAFE)
     print("Saved table ->", U_csv_path)
     print("Saved figure ->", U_fig_path)
     print(U_perf_df[["Model", "Best_CV_Score", "Test_Accuracy", "Test_F1_weighted"]])

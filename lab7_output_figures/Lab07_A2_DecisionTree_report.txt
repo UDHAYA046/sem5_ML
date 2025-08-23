@@ -1,0 +1,12 @@
+Best Params:
+{'min_samples_split': 5, 'max_depth': None, 'criterion': 'entropy'}
+
+Classification Report (Test):
+              precision    recall  f1-score   support
+
+           1       1.00      1.00      1.00         6
+           2       1.00      1.00      1.00         3
+
+    accuracy                           1.00         9
+   macro avg       1.00      1.00      1.00         9
+weighted avg       1.00      1.00      1.00         9

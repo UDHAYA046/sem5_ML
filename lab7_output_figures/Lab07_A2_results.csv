@@ -1,0 +1,5 @@
+Model,BestParams,Best_CV_Score,Test_Accuracy,Test_F1_weighted
+DecisionTree,"{'min_samples_split': 5, 'max_depth': None, 'criterion': 'entropy'}",0.7063492063492064,1.0,1.0
+KNN,"{'U_clf__weights': 'uniform', 'U_clf__n_neighbors': 1, 'U_clf__metric': 'minkowski'}",0.9523809523809524,0.8888888888888888,0.882051282051282
+SVM,"{'U_clf__kernel': 'rbf', 'U_clf__gamma': 'scale', 'U_clf__C': 10}",0.9047619047619048,0.8888888888888888,0.882051282051282
+RandomForest,"{'n_estimators': 300, 'min_samples_split': 2, 'max_depth': 10}",0.8015873015873015,0.8888888888888888,0.882051282051282

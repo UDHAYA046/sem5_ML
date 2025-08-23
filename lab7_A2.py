@@ -1,6 +1,5 @@
 # U_Lab07_A2.py
 # Lab 07 – A2: Hyperparameter Tuning with RandomizedSearchCV
-# Style rules: U_ prefix for all names; functions defined before __main__; no prints inside functions.
 
 import os
 import numpy as np

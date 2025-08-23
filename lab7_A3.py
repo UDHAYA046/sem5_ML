@@ -1,173 +1,112 @@
-# U_Lab07_A3.py
-# Lab 07 – A3: Compare multiple classifiers and tabulate Train vs Test metrics
-# Author: S. Udhaya Sankari
-# Notes:
-#   - Minimal, plagiarism-safe, with inline comments for viva.
-#   - Exactly what A3 asks: fit listed classifiers, report Train/Test metrics in one table.
-#   - No cross-validation; rare-class datasets are supported by safe splitting logic.
+# U_Lab07_A3_plus.py
+# A3-Plus: Default models + Confusion Matrices + One-vs-Rest ROC curves (saved to disk)
+# Same U_ rules as above.
 
 import os
-from typing import Dict, Tuple, Any, List
+os.environ["OMP_NUM_THREADS"] = "1"; os.environ["MKL_NUM_THREADS"] = "1"
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, label_binarize
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_curve, auc
 
-# --- classifiers required by A3 ---
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
 
-# Optional gradient-boosting libraries (used only if installed)
-try:
-    from xgboost import XGBClassifier  # type: ignore
-    _HAS_XGB = True
-except Exception:
-    _HAS_XGB = False
+# ---------- CONFIG ----------
+U_DATA_PATH = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
+U_OUT_DIR   = r"C:\Users\Udhaya\sem5_ML\lab7_output_figures"
+U_TARGET    = "class"
+U_TEST_SIZE = 0.30
+U_SEED      = 42
+# ----------------------------
 
-try:
-    from catboost import CatBoostClassifier  # type: ignore
-    _HAS_CAT = True
-except Exception:
-    _HAS_CAT = False
+# ---------- HELPERS ----------
+def U_load_numeric_xy(csv_path: str, target_col: str):
+    U_df = pd.read_csv(csv_path)
+    U_y = U_df[target_col]
+    U_X = U_df.drop(columns=[target_col]).select_dtypes(include=[np.number]).copy()
+    U_X = U_X.replace([np.inf, -np.inf], np.nan).fillna(U_X.mean(numeric_only=True))
+    return U_X, U_y
 
-# --------------------- user-configurable paths/labels ---------------------
-U_DATA_PATH = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"   # input CSV
-U_OUT_DIR   = r"C:\Users\Udhaya\sem5_ML\lab7_output_figures"         # output folder
-U_TARGET    = "class"                                                # label column
-U_SEED      = 42                                                     # reproducibility
-U_TEST_SIZE = 0.20                                                   # 20% test split
-
-# --------------------- helpers (no prints inside) ---------------------
-def U_safe_split(df: pd.DataFrame, target_col: str, test_size: float, seed: int):
-    """
-    Create a train/test split. Use stratify iff every class has >= 2 samples.
-    Otherwise, fall back to a non-stratified split (A3 doesn't require CV).
-    """
-    X = df.drop(columns=[target_col])
-    y = df[target_col]
-
-    # Check class counts; stratify only if all classes have >= 2 instances
-    class_counts = y.value_counts()
-    can_stratify = (class_counts.min() >= 2)
-
-    Xtr, Xte, ytr, yte = train_test_split(
-        X, y,
-        test_size=test_size,
-        random_state=seed,
-        stratify=y if can_stratify else None
+def U_safe_split(X: pd.DataFrame, y: pd.Series, test_size: float, seed: int):
+    U_can = (y.value_counts().min() >= 2)
+    U_Xtr, U_Xte, U_ytr, U_yte = train_test_split(
+        X, y, test_size=test_size, random_state=seed, stratify=y if U_can else None
     )
-    return Xtr, Xte, ytr, yte, can_stratify
+    return U_Xtr, U_Xte, U_ytr, U_yte, np.unique(y)
 
-def U_build_models(seed: int):
-    """
-    Build the dictionary of classifiers requested in A3.
-    Use StandardScaler where appropriate via Pipeline.
-    """
-    models: Dict[str, Any] = {
-        # SVM with RBF kernel + scaling
-        "SVM_RBF": Pipeline([
-            ("scale", StandardScaler()),
-            ("clf", SVC(kernel="rbf", probability=False, random_state=seed))
-        ]),
-        # Simple tree
-        "DecisionTree": DecisionTreeClassifier(random_state=seed),
-        # Random forest
-        "RandomForest": RandomForestClassifier(n_estimators=300, random_state=seed, n_jobs=-1),
-        # AdaBoost (with default base estimator)
-        "AdaBoost": AdaBoostClassifier(n_estimators=200, random_state=seed),
-        # Naïve Bayes (no scaling needed)
-        "NaiveBayes": GaussianNB(),
-        # MLP with modest capacity + scaling
-        "MLP_128x64": Pipeline([
-            ("scale", StandardScaler()),
-            ("clf", MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=600, random_state=seed))
-        ]),
-    }
-
-    # Add XGBoost if available
-    if _HAS_XGB:
-        models["XGBoost"] = XGBClassifier(
-            n_estimators=400, learning_rate=0.1, max_depth=6,
-            subsample=0.9, colsample_bytree=0.9,
-            eval_metric="mlogloss", tree_method="hist",
-            random_state=seed, n_jobs=-1
-        )
-
-    # Add CatBoost if available (silent training)
-    if _HAS_CAT:
-        models["CatBoost"] = CatBoostClassifier(
-            iterations=500, depth=6, learning_rate=0.1,
-            verbose=False, random_state=seed
-        )
-
-    return models
-
-def U_metric_row(y_true, y_pred, model_name: str, split_tag: str):
-    """
-    Compute Accuracy, Precision_macro, Recall_macro, F1_macro for one split (Train/Test).
-    Returns a dict to be used in the final table.
-    """
-    prec, rec, f1, _ = precision_recall_fscore_support(
-        y_true, y_pred, average="macro", zero_division=0
-    )
-    acc = accuracy_score(y_true, y_pred)
+def U_default_models(seed: int):
     return {
-        "Model": model_name,
-        "Split": split_tag,
-        "Accuracy": float(acc),
-        "Precision_macro": float(prec),
-        "Recall_macro": float(rec),
-        "F1_macro": float(f1)
+        "KNN": Pipeline([("U_scale", StandardScaler()), ("U_clf", KNeighborsClassifier())]),
+        "SVM": Pipeline([("U_scale", StandardScaler()), ("U_clf", SVC(probability=True, random_state=seed))]),
+        "DecisionTree": DecisionTreeClassifier(random_state=seed),
+        "RandomForest": RandomForestClassifier(random_state=seed),
     }
 
-# --------------------- main: all printing here only ---------------------
+def U_save_confusion(y_true, y_pred, labels, name: str, out_dir: str):
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    plt.figure(figsize=(6,5))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+                xticklabels=labels, yticklabels=labels)
+    plt.title(f"Confusion Matrix – {name}")
+    plt.xlabel("Predicted"); plt.ylabel("True")
+    plt.tight_layout()
+    p = os.path.join(out_dir, f"Lab07_A3_CM_{name}.png")
+    plt.savefig(p, dpi=200); plt.close()
+    return p
+
+def U_save_roc(model, X_test: pd.DataFrame, y_test: pd.Series, labels, name: str, out_dir: str):
+    y_bin = label_binarize(y_test, classes=labels)
+    n_classes = y_bin.shape[1]
+    if hasattr(model, "predict_proba"):
+        y_score = model.predict_proba(X_test)
+    else:
+        y_score = model.decision_function(X_test)
+    if y_score.ndim == 1:  # binary decision_function case
+        y_score = y_score.reshape(-1, 1)
+
+    plt.figure(figsize=(7,6))
+    for i in range(n_classes):
+        fpr, tpr, _ = roc_curve(y_bin[:, i], y_score[:, i])
+        roc_auc = auc(fpr, tpr)
+        plt.plot(fpr, tpr, label=f"Class {labels[i]} (AUC={roc_auc:.2f})")
+    plt.plot([0,1],[0,1],"k--")
+    plt.title(f"ROC (OvR) – {name}")
+    plt.xlabel("False Positive Rate"); plt.ylabel("True Positive Rate")
+    plt.legend(loc="lower right"); plt.tight_layout()
+    p = os.path.join(out_dir, f"Lab07_A3_ROC_{name}.png")
+    plt.savefig(p, dpi=200); plt.close()
+    return p
+# ------------------------------------------
+
+# --------------------------- MAIN ------------------------
 if __name__ == "__main__":
     os.makedirs(U_OUT_DIR, exist_ok=True)
 
-    # 1) Load dataset
-    df = pd.read_csv(U_DATA_PATH)
+    U_X, U_y = U_load_numeric_xy(U_DATA_PATH, U_TARGET)
+    U_Xtr, U_Xte, U_ytr, U_yte, U_labels = U_safe_split(U_X, U_y, U_TEST_SIZE, U_SEED)
 
-    # 2) Train/Test split (use stratify only if feasible)
-    Xtr, Xte, ytr, yte, used_stratify = U_safe_split(df, U_TARGET, U_TEST_SIZE, U_SEED)
+    U_models = U_default_models(U_SEED)
+    U_rows = []
 
-    # 3) Build required classifiers
-    models = U_build_models(seed=U_SEED)
+    for U_name, U_model in U_models.items():
+        U_model.fit(U_Xtr, U_ytr)
+        U_pred = U_model.predict(U_Xte)
+        U_acc  = accuracy_score(U_yte, U_pred)
+        U_f1   = f1_score(U_yte, U_pred, average="weighted")
+        U_rows.append({"Model": U_name, "Accuracy": U_acc, "F1_weighted": U_f1})
+        U_save_confusion(U_yte, U_pred, U_labels, U_name, U_OUT_DIR)
+        U_save_roc(U_model, U_Xte, U_yte, U_labels, U_name, U_OUT_DIR)
 
-    # 4) Fit each model and collect Train/Test metrics
-    rows: List[Dict[str, Any]] = []
-    for name, est in models.items():
-        est.fit(Xtr, ytr)
-
-        # Evaluate on TRAIN
-        yhat_tr = est.predict(Xtr)
-        rows.append(U_metric_row(ytr, yhat_tr, name, "Train"))
-
-        # Evaluate on TEST
-        yhat_te = est.predict(Xte)
-        rows.append(U_metric_row(yte, yhat_te, name, "Test"))
-
-    # 5) Create a single table with Train vs Test rows per model
-    results = pd.DataFrame(rows)
-
-    # 6) Pivot to a wide, report-friendly table: columns per metric and split
-    wide = results.pivot(index="Model", columns="Split", values=["Accuracy", "Precision_macro", "Recall_macro", "F1_macro"])
-    # Sorting models by Test F1 (descending) for easy reading
-    if ("F1_macro", "Test") in wide.columns:
-        wide = wide.sort_values(("F1_macro", "Test"), ascending=False)
-
-    # 7) Save CSV (exact requirement of A3: tabulated Train vs Test metrics)
-    out_csv = os.path.join(U_OUT_DIR, "Lab07_A3_results.csv")
-    wide.to_csv(out_csv)
-
-    # 8) Minimal console view
-    print("\n=== Lab07 A3: Train vs Test Metrics (macro-averaged) ===")
-    print(f"(Stratified split used: {used_stratify})")
-    print(wide.round(4))
-    print(f"\nSaved table -> {out_csv}")
+    U_df = pd.DataFrame(U_rows).sort_values("F1_weighted", ascending=False)
+    U_csv = os.path.join(U_OUT_DIR, "Lab07_A3_plus_default_results.csv")
+    U_df.to_csv(U_csv, index=False)
+    print("Saved A3-plus table ->", U_csv)

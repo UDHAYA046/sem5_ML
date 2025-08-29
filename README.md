@@ -47,6 +47,18 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | `lab5_A5.py`  | Evaluate clustering (k=2) using Silhouette Score, Calinski-Harabasz Score, and DB Index        |
 | `lab5_A6.py`  | Perform clustering for `k = 2 to 10`, plot Silhouette, CH, and DB scores separately             |
 | `lab5_A7.py`  | Generate Elbow Plot using Inertia to determine the optimal number of clusters (`k`)            |
+| `lab6_A1.py`           | Calculate entropy of target with equal-width binning; plot category counts. |
+| `lab6_A2.py`           | Compute Gini index of target; plot category counts.                         |
+| `lab6_A3.py`           | Calculate Information Gain for all features; select root feature; plot IG.  |
+| `lab6_A4.py`           | Same as A3 but with parameterized binning (equal-width / equal-frequency).  |
+| `lab6_A5.py`           | Build custom recursive Decision Tree; display structure in pretty text form.|
+| `lab6_A6.py`           | Train sklearn DecisionTreeClassifier and visualize tree with plot_tree().   |
+| `lab6_A7.py`           | Use two features to train DT and plot 2D decision boundary with regions.    |
+| `lab7_A2.py`  | Implements A2: Hyperparameter tuning with RandomizedSearchCV (KNN, SVM, DecisionTree, RandomForest). Saves per-model reports, CV plots, a summary CSV, and a comparison bar chart. |
+| `lab7_A3.py`  | Implements A3: Classification comparison (SVM, DecisionTree, RandomForest, AdaBoost, Naïve Bayes, MLP; XGBoost/CatBoost if installed). Produces a Train vs Test metrics table and Test-F1 bar plot. |
+| `lab7_A4.py`  | Placeholder for A4 (Regression). Not required for your dataset since it is classification-based. |
+| `lab7_Q1.py`  | Implements O1: SHAP explainability. Generates SHAP bar/beeswarm plots for RandomForest and Logistic Regression and a feature-importance comparison CSV. |
+| `lab7_Q2.py`  | Implements O2: LIME local explanations. Generates a PNG explanation of a chosen test instance prediction from RandomForest. |
 
 
 

@@ -2,6 +2,11 @@
 # Lab 8 – A3: Compare activations on AND gate (perceptron vs delta updates)
 # Author: S. Udhaya Sankari | Roll: BL.EN.U4CSE23150
 
+import os
+
+U_OUTDIR = r"C:\Users\Udhaya\sem5_ML\lab8_output_figures"  # <-- your folder
+os.makedirs(U_OUTDIR, exist_ok=True)
+
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
@@ -119,7 +124,7 @@ def U_plot_histories(results):
     plt.xlabel("Epochs"); plt.ylabel("Sum-Square Error")
     plt.title("Error vs Epochs (perceptron updates)")
     plt.grid(True); plt.legend(); plt.tight_layout()
-    plt.savefig("U_A3_perceptron_updates.png", dpi=150)
+    plt.savefig(os.path.join(U_OUTDIR, "U_A3_perceptron_updates.png"), dpi=150)
 
     # delta-style
     plt.figure()

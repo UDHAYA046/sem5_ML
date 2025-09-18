@@ -1,10 +1,12 @@
 # ------------------------------------------------------------
 # Lab 8 – A10 | Two-output MLP for AND & XOR (one-hot targets)
 # Author : S. Udhaya Sankari | BL.EN.U4CSE23150
-# Model  : 2–2–2 MLP, sigmoid activations, α=0.05, CE grads + momentum
-# Targets: 0 -> [1, 0], 1 -> [0, 1]
-# Stop   : SSE <= 0.002 (sum over both outputs) or 1000 epochs
-# Saves  : ...\lab8_output_figures\U_A10_<GATE>_loss.png
+# Model  : 2–2–2 MLP
+# Hidden : Sigmoid
+# Output : Softmax (two nodes) with Cross-Entropy gradients
+# Train  : Batch GD with Momentum (β=0.9), α=0.05
+# Stop   : When SSE (sum over both outputs) <= 0.002 or epoch==1000
+# Saves  : ...\lab8_output_figures\U_A10_AND_loss.png, U_A10_XOR_loss.png
 # ------------------------------------------------------------
 
 import os
@@ -12,16 +14,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ----------------------- Config ----------------------------
-U_ALPHA      = 0.05
-U_MOMENTUM   = 0.90
-U_MAX_EPOCHS = 1000
-U_TARGET_SSE = 0.002
-U_OUTPUT_DIR = r"C:\Users\Udhaya\sem5_ML\lab8_output_figures"
+U_ALPHA       = 0.05
+U_MOMENTUM    = 0.90
+U_MAX_EPOCHS  = 1000
+U_TARGET_SSE  = 0.002
+U_OUTPUT_DIR  = r"C:\Users\Udhaya\sem5_ML\lab8_output_figures"
 os.makedirs(U_OUTPUT_DIR, exist_ok=True)
 
 # ---------------------- Activations ------------------------
 def U_sigmoid(z):       return 1.0 / (1.0 + np.exp(-z))
 def U_dsigmoid(a):      return a * (1.0 - a)
+
+def U_softmax(Z):
+    # Row-wise stable softmax
+    Zs = Z - np.max(Z, axis=1, keepdims=True)
+    expZ = np.exp(Zs)
+    return expZ / np.sum(expZ, axis=1, keepdims=True)
 
 def U_xavier_limit(fan_in, fan_out):
     return np.sqrt(6.0 / (fan_in + fan_out))
@@ -52,14 +60,14 @@ def train_gate(gate_name, seed=482):
 
     U_T = one_hot_from_scalar(y_scalar)   # (4x2), one-hot
 
-    # ----- Init: 2->2 hidden, 2->2 output (Xavier)
+    # ----- Init: 2->2 hidden, 2->2 output (Xavier) + small random biases
     lim_v = U_xavier_limit(2, 2)
-    U_V  = rng.uniform(-lim_v, lim_v, size=(2, 2))   # input->hidden
-    U_bh = np.zeros(2)
+    U_V  = rng.uniform(-lim_v, lim_v, size=(2, 2))         # input->hidden
+    U_bh = rng.uniform(-0.1, 0.1, size=2)                  # hidden bias
 
     lim_w = U_xavier_limit(2, 2)
-    U_W  = rng.uniform(-lim_w, lim_w, size=(2, 2))   # hidden->output
-    U_bo = np.zeros(2)
+    U_W  = rng.uniform(-lim_w, lim_w, size=(2, 2))         # hidden->output
+    U_bo = rng.uniform(-0.1, 0.1, size=2)                  # output bias
 
     # Momentum buffers
     U_vW  = np.zeros_like(U_W);  U_vbo = np.zeros_like(U_bo)
@@ -73,17 +81,17 @@ def train_gate(gate_name, seed=482):
         Zh = U_X @ U_V + U_bh        # (4x2)
         Ah = U_sigmoid(Zh)           # (4x2)
         Zo = Ah @ U_W + U_bo         # (4x2)
-        Y  = U_sigmoid(Zo)           # (4x2)
+        Y  = U_softmax(Zo)           # (4x2)  <-- softmax output
 
         # SSE for the lab's stop condition (sum over both outputs)
-        E   = Y - U_T                # (4x2)
+        E   = Y - U_T
         U_SSE = float(np.sum(E**2))
         loss_curve.append(U_SSE)
         if U_SSE <= U_TARGET_SSE:
             final_epoch = epoch
             break
 
-        # CE gradients with sigmoid => dL/dZo = (Y - T)
+        # CE with softmax: dL/dZo = (Y - T)
         dZo = (Y - U_T)                     # (4x2)
         gW  = Ah.T @ dZo                    # (2x2)
         gbo = np.sum(dZo, axis=0)           # (2,)
@@ -92,7 +100,7 @@ def train_gate(gate_name, seed=482):
         gV  = U_X.T @ dZh                   # (2x2)
         gbh = np.sum(dZh, axis=0)           # (2,)
 
-        # Momentum update
+        # Momentum update: v = β v + α g;  θ = θ - v
         U_vW  = U_MOMENTUM * U_vW  + U_ALPHA * gW
         U_vbo = U_MOMENTUM * U_vbo + U_ALPHA * gbo
         U_vV  = U_MOMENTUM * U_vV  + U_ALPHA * gV
@@ -105,7 +113,7 @@ def train_gate(gate_name, seed=482):
     # ----- Predictions & accuracy
     def predict_row(x):
         ah = U_sigmoid(x @ U_V + U_bh)
-        y  = U_sigmoid(ah @ U_W + U_bo)     # (2,)
+        y  = U_softmax(ah @ U_W + U_bo)     # (2,)
         return y
 
     Y_pred = np.vstack([predict_row(x) for x in U_X])       # (4x2)
@@ -114,10 +122,10 @@ def train_gate(gate_name, seed=482):
     acc    = float(np.mean(y_cls == t_cls))
 
     # ----- Print
-    print(f"\n=== A10-{gate_name.upper()}: 2–2–2 MLP (sigmoid, CE+Momentum) ===")
+    print(f"\n=== A10-{gate_name.upper()}: 2–2–2 MLP (sigmoid hidden, SOFTMAX output) ===")
     print(f"Final epoch: {final_epoch}")
     print(f"Final SSE  : {U_SSE:.6f}")
-    print("Outputs (sigmoid, two nodes):")
+    print("Outputs (two nodes):")
     print(np.round(Y_pred, 6))
     print("Predicted class (argmax):", y_cls.tolist())
     print("Accuracy:", acc)
@@ -150,5 +158,6 @@ def train_gate(gate_name, seed=482):
 
 # -------------------- Run both gates -----------------------
 if __name__ == "__main__":
+    # Use different seeds just to avoid any unlucky symmetry for XOR
     res_and = train_gate("AND", seed=482)
-    res_xor = train_gate("XOR", seed=482)
+    res_xor = train_gate("XOR", seed=947)

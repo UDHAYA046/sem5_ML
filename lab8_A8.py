@@ -1,107 +1,113 @@
-# Lab 8 – A8 | AND via 2-2-1 MLP (Sigmoid + Backprop)
-# Author: S. Udhaya Sankari | BL.EN.U4CSE23150
+# ------------------------------------------------------------
+# Lab 8 – A8 | AND via 2–2–1 MLP (Sigmoid + Batch Backprop)
+# Author : S. Udhaya Sankari | BL.EN.U4CSE23150
+# Purpose: Train a tiny MLP to implement AND with α=0.05.
+# Stop when SSE <= 0.002 or after 1000 epochs.
+# Saves loss curve to: C:\Users\Udhaya\sem5_ML\lab8_output_figures
+# ------------------------------------------------------------
 
-import os, math
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -------------------- Config --------------------
+# ======================= Config ============================
 U_SEED = 42
-rng = np.random.default_rng(U_SEED)
-
-U_ALPHA = 0.05                     # learning rate
+U_ALPHA = 0.05
 U_MAX_EPOCHS = 1000
-U_TARGET_SSE = 0.002               # stop when SSE <= this
+U_TARGET_SSE = 0.002
 U_OUTPUT_DIR = r"C:\Users\Udhaya\sem5_ML\lab8_output_figures"
 os.makedirs(U_OUTPUT_DIR, exist_ok=True)
 
-# -------------------- Data (AND) --------------------
-# Inputs (A, B) and targets O1
+rng = np.random.default_rng(U_SEED)
+
+# ======================== Data =============================
+# AND truth table
 U_X = np.array([[0., 0.],
                 [0., 1.],
                 [1., 0.],
-                [1., 1.]], dtype=float)
+                [1., 1.]], dtype=float)            # shape: (4,2)
+
 U_T = np.array([[0.],
                 [0.],
                 [0.],
-                [1.]], dtype=float)
+                [1.]], dtype=float)                # shape: (4,1)
 
-# -------------------- Helpers --------------------
+# ===================== Activations =========================
 def U_sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
 def U_dsigmoid(a):
-    # 'a' is already sigmoid(z)
+    # derivative wrt pre-activation when 'a' = sigmoid(z)
     return a * (1.0 - a)
 
-# -------------------- Network: 2-2-1 --------------------
-# We include biases explicitly as separate weight vectors
-# Input layer (2) -> Hidden layer (2): V (2x2) and hidden bias b_h (2,)
-U_V = rng.normal(0.0, 0.5, size=(2, 2))      # v11 v12 / v21 v22
-U_bh = rng.normal(0.0, 0.5, size=(2, ))
+# ================== Xavier Initialization ==================
+def U_xavier_limit(fan_in, fan_out):
+    return np.sqrt(6.0 / (fan_in + fan_out))
 
-# Hidden (2) -> Output (1): W (2x1) and output bias b_o (1,)
-U_W = rng.normal(0.0, 0.5, size=(2, 1))      # w1, w2
-U_bo = rng.normal(0.0, 0.5, size=(1, ))
+# 2 -> 2 hidden
+_lim_v = U_xavier_limit(2, 2)
+U_V  = rng.uniform(-_lim_v, _lim_v, size=(2, 2))   # input->hidden weights (v11 v12 / v21 v22)
+U_bh = np.zeros(2, dtype=float)                    # hidden biases
 
-def U_forward(x_row):
-    """Forward pass for a single example."""
-    # hidden pre-activation and activation
-    z_h = x_row @ U_V + U_bh        # shape (2,)
-    a_h = U_sigmoid(z_h)            # shape (2,)
-    # output layer
-    z_o = a_h @ U_W + U_bo          # shape (1,)
-    a_o = U_sigmoid(z_o)            # shape (1,)
-    return a_h, a_o
+# 2 -> 1 output
+_lim_w = U_xavier_limit(2, 1)
+U_W  = rng.uniform(-_lim_w, _lim_w, size=(2, 1))   # hidden->output weights (w1, w2)^T
+U_bo = np.zeros(1, dtype=float)                    # output bias
 
-# -------------------- Training (online SGD) --------------------
+# ===================== Training (Batch) ====================
 U_loss_curve = []
+U_final_epoch = 0
+
 for U_epoch in range(1, U_MAX_EPOCHS + 1):
-    # stochastic update over all 4 samples
-    U_sse = 0.0
-    for i in range(len(U_X)):
-        x = U_X[i]                 # shape (2,)
-        t = U_T[i]                 # shape (1,)
+    # ---- Forward (batch)
+    U_Zh = U_X @ U_V + U_bh               # (4x2)
+    U_Ah = U_sigmoid(U_Zh)                # (4x2)
+    U_Zo = U_Ah @ U_W + U_bo              # (4x1)
+    U_Y  = U_sigmoid(U_Zo)                # (4x1)
 
-        # ---- forward
-        a_h, y = U_forward(x)      # a_h: (2,), y: (1,)
-        # ---- loss
-        err = y - t                # (1,)
-        U_sse += float(err.T @ err)
+    # ---- Loss (Sum-Square Error over 4 samples)
+    U_E   = U_Y - U_T                     # (4x1)
+    U_SSE = float(np.sum(U_E ** 2))
+    U_loss_curve.append(U_SSE)
 
-        # ---- backprop deltas
-        delta_o = err * U_dsigmoid(y)                 # (1,)
-        delta_h = (U_W.flatten() * delta_o) * U_dsigmoid(a_h)  # (2,)
-
-        # ---- gradient updates
-        # Hidden->Output weights and bias
-        U_W -= U_ALPHA * a_h.reshape(2, 1) @ delta_o.reshape(1, 1)
-        U_bo -= U_ALPHA * delta_o
-
-        # Input->Hidden weights and biases
-        U_V -= U_ALPHA * np.outer(x, delta_h)        # (2x2)
-        U_bh -= U_ALPHA * delta_h
-
-    U_loss_curve.append(U_sse)
-
-    if U_sse <= U_TARGET_SSE:
+    # ---- Stopping criterion
+    if U_SSE <= U_TARGET_SSE:
+        U_final_epoch = U_epoch
         break
 
-# -------------------- Results --------------------
-print("\n=== A8: AND via Backprop (2-2-1, sigmoid) ===")
-print(f"Final epoch: {U_epoch}")
-print(f"Final SSE  : {U_sse:.6f}")
+    # ---- Backprop (batch gradients)
+    U_dY   = U_E * U_dsigmoid(U_Y)        # (4x1)
+    U_gW   = U_Ah.T @ U_dY                # (2x1)
+    U_gbo  = np.sum(U_dY, axis=0)         # (1,)
+    U_dAh  = U_dY @ U_W.T                 # (4x2)
+    U_dZh  = U_dAh * U_dsigmoid(U_Ah)     # (4x2)
+    U_gV   = U_X.T @ U_dZh                # (2x2)
+    U_gbh  = np.sum(U_dZh, axis=0)        # (2,)
 
-# Predictions after training
-U_preds = []
-for i in range(len(U_X)):
-    _, y = U_forward(U_X[i])
-    U_preds.append(float(y))
-U_preds = np.array(U_preds)
-U_bin = (U_preds >= 0.5).astype(int)
+    # ---- Parameter updates (gradient descent)
+    U_W  -= U_ALPHA * U_gW
+    U_bo -= U_ALPHA * U_gbo
+    U_V  -= U_ALPHA * U_gV
+    U_bh -= U_ALPHA * U_gbh
 
-print("Outputs (sigmoid):", np.round(U_preds, 6))
-print("Binarized (>=0.5):", U_bin.tolist())
+    U_final_epoch = U_epoch  # in case we hit max epochs
+
+# ======================= Evaluation ========================
+def U_predict(x2):
+    z_h = x2 @ U_V + U_bh
+    a_h = U_sigmoid(z_h)
+    z_o = a_h @ U_W + U_bo
+    y   = U_sigmoid(z_o)
+    return float(y)
+
+U_outputs = np.array([U_predict(U_X[i]) for i in range(len(U_X))])
+U_bin_out = (U_outputs >= 0.5).astype(int)
+
+print("\n=== A8: AND via Backprop (2–2–1, sigmoid) ===")
+print(f"Final epoch: {U_final_epoch}")
+print(f"Final SSE  : {U_SSE:.6f}")
+print("Outputs (sigmoid):", np.round(U_outputs, 6).tolist())
+print("Binarized (>=0.5):", U_bin_out.tolist())
 
 print("\nFinal weights:")
 print("V (input->hidden):")
@@ -111,9 +117,9 @@ print("W (hidden->output):")
 print(np.round(U_W, 6))
 print("b_o:", np.round(U_bo, 6))
 
-# -------------------- Plot & Save --------------------
+# ===================== Plot & Save =========================
 plt.figure(figsize=(6, 4))
-plt.plot(U_loss_curve)
+plt.plot(U_loss_curve, linewidth=2)
 plt.title("A8 – AND via Backprop: SSE vs Epochs")
 plt.xlabel("Epoch")
 plt.ylabel("Sum-Square Error")
@@ -121,5 +127,4 @@ plt.grid(True, linestyle="--", linewidth=0.6)
 U_plot_path = os.path.join(U_OUTPUT_DIR, "U_A8_AND_loss.png")
 plt.savefig(U_plot_path, dpi=150, bbox_inches="tight")
 plt.close()
-
 print("\nSaved plot:", U_plot_path)

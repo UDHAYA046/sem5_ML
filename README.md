@@ -59,6 +59,18 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | `lab7_Q1.py`  | Implements O1: SHAP explainability. Generates SHAP bar/beeswarm plots for RandomForest and Logistic Regression and a feature-importance comparison CSV. |
 | `lab7_Q2.py`  | Implements O2: LIME local explanations. Generates a PNG explanation of a chosen test instance prediction from RandomForest. |
 
+| **lab8_A1.py** | Single-layer perceptron (step/bipolar) trained from scratch on the AND gate; prints weights and SSE. |
+| **lab8_A2.py** | Perceptron on AND with custom initialization; logs epoch-wise updates and plots SSE/weights. |
+| **lab8_A3.py** | Activation & update comparison on AND (bipolar/step/sigmoid/ReLU; perceptron vs delta); convergence curves. |
+| **lab8_A4.py** | Visualizes decision boundary and convergence behavior for the single-neuron AND experiments. |
+| **lab8_A5.py** | XOR experiments with a single perceptron/delta rule to show non-separability; learning-curve plots. |
+| **lab8_A6.py** | Closed-form training via matrix pseudo-inverse (Moore–Penrose) and evaluation on the truth-table data. |
+| **lab8_A7.py** | Side-by-side comparison: perceptron learning vs matrix pseudo-inverse (weights, outputs, SSE). |
+| **lab8_A8.py** | 2-2-1 MLP (sigmoid) trained by backprop (CE + momentum) for the AND gate; SSE vs epochs plot. |
+| **lab8_A9.py** | Repeat A8 for the XOR gate (2-2-1 MLP); shows convergence, final weights, and loss curve. |
+| **lab8_A10.py** | Two-output MLP (2-2-2, softmax + CE) for AND & XOR with one-hot targets; accuracy and loss plots. |
+| **lab8_A11.py** | AND & XOR solved using scikit-learn `MLPClassifier`; reports predictions, weights, and loss curves. |
+| **lab8_A12.py** | Apply `MLPClassifier` to the project dataset with a preprocessing pipeline + small grid search; saves confusion matrix, learning curve, and summary. |
 
 
 

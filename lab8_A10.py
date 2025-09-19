@@ -26,10 +26,19 @@ def U_sigmoid(z):       return 1.0 / (1.0 + np.exp(-z))
 def U_dsigmoid(a):      return a * (1.0 - a)
 
 def U_softmax(Z):
-    # Row-wise stable softmax
-    Zs = Z - np.max(Z, axis=1, keepdims=True)
-    expZ = np.exp(Zs)
-    return expZ / np.sum(expZ, axis=1, keepdims=True)
+    """
+    Stable softmax that works for both 2D (batch, classes)
+    and 1D (classes,) inputs.
+    """
+    Z = np.asarray(Z)
+    if Z.ndim == 1:
+        Zs = Z - np.max(Z)
+        expZ = np.exp(Zs)
+        return expZ / np.sum(expZ)
+    else:
+        Zs = Z - np.max(Z, axis=1, keepdims=True)
+        expZ = np.exp(Zs)
+        return expZ / np.sum(expZ, axis=1, keepdims=True)
 
 def U_xavier_limit(fan_in, fan_out):
     return np.sqrt(6.0 / (fan_in + fan_out))
@@ -112,8 +121,9 @@ def train_gate(gate_name, seed=482):
 
     # ----- Predictions & accuracy
     def predict_row(x):
-        ah = U_sigmoid(x @ U_V + U_bh)
-        y  = U_softmax(ah @ U_W + U_bo)     # (2,)
+        ah = U_sigmoid(x @ U_V + U_bh)               # (2,)
+        zo = ah @ U_W + U_bo                          # (2,)
+        y  = U_softmax(zo).ravel()                    # ensure 1D length-2
         return y
 
     Y_pred = np.vstack([predict_row(x) for x in U_X])       # (4x2)
@@ -158,6 +168,5 @@ def train_gate(gate_name, seed=482):
 
 # -------------------- Run both gates -----------------------
 if __name__ == "__main__":
-    # Use different seeds just to avoid any unlucky symmetry for XOR
     res_and = train_gate("AND", seed=482)
-    res_xor = train_gate("XOR", seed=947)
+    res_xor = train_gate("XOR", seed=947)   # different seed helps avoid symmetry

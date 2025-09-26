@@ -1,7 +1,6 @@
 Model: StackingClassifier
 Accuracy: 0.9667
 
-Classification Report:
               precision    recall  f1-score   support
 
            0       1.00      1.00      1.00        10
@@ -11,3 +10,8 @@ Classification Report:
     accuracy                           0.97        30
    macro avg       0.97      0.97      0.97        30
 weighted avg       0.97      0.97      0.97        30
+
+Confusion Matrix:
+[[10  0  0]
+ [ 0  9  1]
+ [ 0  0 10]]

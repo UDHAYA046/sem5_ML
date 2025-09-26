@@ -71,6 +71,9 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | **lab8_A10.py** | Two-output MLP (2-2-2, softmax + CE) for AND & XOR with one-hot targets; accuracy and loss plots. |
 | **lab8_A11.py** | AND & XOR solved using scikit-learn `MLPClassifier`; reports predictions, weights, and loss curves. |
 | **lab8_A12.py** | Apply `MLPClassifier` to the project dataset with a preprocessing pipeline + small grid search; saves confusion matrix, learning curve, and summary. |
+| lab9_A1_stacking.py    | Implements a stacking classifier (LR, RF, SVM as base models, LR as meta). |
+| lab9_A2_pipeline.py    | Builds a parallel feature processing pipeline using FeatureUnion + LR.     |
+| lab9_A3_lime.py        | Fits a classification pipeline and generates LIME explanations for outputs.|
 
 
 

@@ -2,25 +2,26 @@
 # Lab 10 – A4 (final): Sequential Feature Selection / Reduction + Comparison
 # Author: S. Udhaya Sankari
 # Rules: functions have NO prints; prints/plots only in main.
-# Fixes: SFS uses KFold(2) + n_jobs=1; no 'strict=' in zip (Py3.9 safe)
+# Fixes: SFS uses KFold(2) + n_jobs=1; Python 3.9-safe zip; k capped to p-1
 # ============================================================
 
 from __future__ import annotations
-import numpy as np
-import pandas as pd
+import warnings
 from pathlib import Path
 from typing import Tuple, Dict, Any, Optional, List
+
+import numpy as np
+import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SequentialFeatureSelector, RFE
+from sklearn.base import clone
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
-from sklearn.base import clone
-import warnings
 
 
 # ---------------------- Data I/O & Cleaning (no prints) ----------------------
@@ -117,10 +118,12 @@ def U_run_sfs(
 ) -> Tuple[Dict[str, Any], Dict[int, List[str]]]:
     """
     SFS with KFold(2) and n_jobs=1 (stable on Windows; tolerant to single-sample class).
-    Select best k by macro-F1 (tie-break: accuracy).
+    Best k picked by macro-F1 (tie-break: accuracy).
     """
+    p_local = X_train.shape[1]
     if k_values is None:
-        k_values = list(range(2, max(3, X_train.shape[1]) + 1))
+        # SFS requires k < p; allow 1..p-1
+        k_values = list(range(1, max(1, p_local - 1) + 1))
 
     selected_by_k: Dict[int, List[str]] = {}
     best = {"k": None, "accuracy": -1.0, "f1_macro": -1.0, "mask": None}
@@ -133,7 +136,7 @@ def U_run_sfs(
             n_features_to_select=k,
             direction=direction,
             cv=cv2,
-            n_jobs=1,            # key fix for Windows/joblib
+            n_jobs=1,
             scoring="f1_macro",
         )
         sfs.fit(X_train, y_train)
@@ -158,8 +161,9 @@ def U_run_rfe(
     feature_names: List[str],
     k_values: Optional[List[int]] = None
 ) -> Tuple[Dict[str, Any], Dict[int, List[str]]]:
+    p_local = X_train.shape[1]
     if k_values is None:
-        k_values = list(range(2, max(3, X_train.shape[1]) + 1))
+        k_values = list(range(1, max(1, p_local - 1) + 1))
 
     selected_by_k: Dict[int, List[str]] = {}
     best = {"k": None, "accuracy": -1.0, "f1_macro": -1.0, "mask": None}
@@ -198,12 +202,12 @@ def U_eval_classifier(model, X_train, y_train, X_test, y_test) -> Dict[str, Any]
 # ---------------------- Main (prints only here) ----------------------
 
 if __name__ == "__main__":
-    # Optional: quiet known small-sample warnings
+    # Optional: quiet small-sample warnings
     warnings.filterwarnings("ignore", category=UserWarning)
 
     # ---- Config ----
-    U_DATA_PATH    = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
-    U_TARGET_COL   = "class"
+    U_DATA_PATH     = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
+    U_TARGET_COL    = "class"
     DROP_IF_PRESENT = ["filename", "file", "filepath", "path", "id"]
     RNG = 42
 
@@ -219,7 +223,8 @@ if __name__ == "__main__":
     print("Class counts:", class_counts)
     print(f"Train shape: {X_tr.shape}, Test shape: {X_te.shape}")
     p = X_tr.shape[1]
-    k_list = list(range(2, max(2, p) + 1))
+    k_max = max(1, p - 1)              # SFS requires k < p
+    k_list = list(range(1, k_max + 1))
 
     # 3) Models (class-weighted for imbalance)
     clf_log = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=RNG, class_weight="balanced")

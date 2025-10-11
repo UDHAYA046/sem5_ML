@@ -1,8 +1,7 @@
 # ============================================================
 # Lab 10 – A2: PCA (retain 99% variance) + Model Comparison
 # Author: S. Udhaya Sankari
-# Rules: functions have NO prints; prints/plots only in main.
-# Dataset: C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv (target='class')
+# Rules: NO prints inside functions; prints/plots only in main.
 # ============================================================
 
 from __future__ import annotations
@@ -10,8 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-from typing import Tuple, Dict, Any, Optional
-from collections import Counter
+from typing import Tuple, Dict, Any, Optional, List
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -21,7 +19,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 
 
-# ---------------------- Data I/O (no prints) ----------------------
+# ---------------------- Data I/O & Cleaning (no prints) ----------------------
 
 def U_load_csv(file_path: str, target_col: str) -> Tuple[pd.DataFrame, pd.Series]:
     """Load CSV and return (X, y)."""
@@ -32,6 +30,22 @@ def U_load_csv(file_path: str, target_col: str) -> Tuple[pd.DataFrame, pd.Series
     X = df.drop(columns=[target_col])
     y = df[target_col]
     return X, y
+
+def U_numeric_only(
+    X: pd.DataFrame,
+    drop_if_present: Optional[List[str]] = None
+) -> Tuple[pd.DataFrame, List[str], List[str]]:
+    """
+    Return numeric-only feature frame.
+    Optionally drop columns by name first (IDs like 'filename', 'file', 'path').
+    Returns: (X_numeric, dropped_named, dropped_nonnumeric)
+    """
+    drop_if_present = drop_if_present or []
+    drop_named = [c for c in drop_if_present if c in X.columns]
+    X2 = X.drop(columns=drop_named, errors="ignore")
+    X_num = X2.select_dtypes(include=[np.number]).copy()
+    dropped_nonnumeric = [c for c in X2.columns if c not in X_num.columns]
+    return X_num, drop_named, dropped_nonnumeric
 
 
 # ---------------------- Robust split + scaling (no prints) ----------------------
@@ -45,8 +59,7 @@ def U_split_scale_safe(
     """
     Robust splitter:
     - If all classes have >= 2 samples: stratified split.
-    - If any class has < 2: keep those rare samples in TRAIN,
-      split the rest (stratified when possible).
+    - If any class has < 2: keep those rare samples in TRAIN, split rest (stratified if possible).
     Returns scaled arrays, fitted scaler, and class counts.
     """
     y = pd.Series(y).reset_index(drop=True)
@@ -64,9 +77,7 @@ def U_split_scale_safe(
         X_rare, y_rare = X[rare_mask], y[rare_mask]
         X_rest, y_rest = X[~rare_mask], y[~rare_mask]
 
-        counts_rest = y_rest.value_counts()
-        can_stratify_rest = (len(y_rest) > 0) and (counts_rest.min() >= 2)
-
+        can_stratify_rest = (len(y_rest) > 0) and (y_rest.value_counts().min() >= 2)
         if can_stratify_rest:
             X_tr0, X_te0, y_tr0, y_te0 = train_test_split(
                 X_rest, y_rest, test_size=test_size, stratify=y_rest, random_state=random_state
@@ -83,7 +94,6 @@ def U_split_scale_safe(
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train.values)
     X_test_scaled  = scaler.transform(X_test.values)
-
     return X_train_scaled, X_test_scaled, y_train.values, y_test.values, scaler, counts
 
 
@@ -125,20 +135,27 @@ def U_eval_classifier(
 
 if __name__ == "__main__":
     # ---- Config ----
-    U_DATA_PATH  = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
-    U_TARGET_COL = "class"
+    U_DATA_PATH   = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
+    U_TARGET_COL  = "class"     # change if different
+    DROP_IF_PRESENT = ["filename", "file", "filepath", "path", "id"]  # common ID columns to drop first
     RNG = 42
 
     # 1) Load
-    X, y = U_load_csv(U_DATA_PATH, U_TARGET_COL)
-    print(f"Loaded: {U_DATA_PATH}  |  X shape={X.shape}, y len={len(y)}")
+    X_raw, y = U_load_csv(U_DATA_PATH, U_TARGET_COL)
+    print(f"Loaded: {U_DATA_PATH}  |  X shape(before clean)={X_raw.shape}, y len={len(y)}")
 
-    # 2) Robust split + scale
+    # 2) Keep numeric features only (drop IDs like 'filename')
+    X, dropped_named, dropped_nonnum = U_numeric_only(X_raw, drop_if_present=DROP_IF_PRESENT)
+    print(f"Dropped named columns (if present): {dropped_named}")
+    print(f"Dropped non-numeric columns: {dropped_nonnum}")
+    print(f"X shape(after numeric-only)={X.shape}")
+
+    # 3) Robust split + scale
     X_tr, X_te, y_tr, y_te, scaler, class_counts = U_split_scale_safe(X, y, test_size=0.2, random_state=RNG)
     print("Class counts:", class_counts)
     print(f"Train shape: {X_tr.shape}, Test shape: {X_te.shape}")
 
-    # 3) Baseline (no PCA)
+    # 4) Baseline (no PCA)
     clf_log = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=RNG)
     clf_rf  = RandomForestClassifier(n_estimators=200, random_state=RNG)
     base_log = U_eval_classifier(clf_log, X_tr, y_tr, X_te, y_te)
@@ -148,7 +165,7 @@ if __name__ == "__main__":
     print(f"Logistic Regression → Acc={base_log['accuracy']:.3f}, F1={base_log['f1_macro']:.3f}")
     print(f"Random Forest       → Acc={base_rf['accuracy']:.3f}, F1={base_rf['f1_macro']:.3f}")
 
-    # 4) PCA @ 99% variance
+    # 5) PCA @ 99% variance
     X_tr_pca, X_te_pca, pca = U_apply_pca(X_tr, X_te, variance_retained=0.99, random_state=RNG)
     print(f"\nPCA retained components: {X_tr_pca.shape[1]}  (cum. variance ≈ {pca.explained_variance_ratio_.sum():.3f})")
 
@@ -162,7 +179,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
 
-    # 5) Evaluate after PCA
+    # 6) Evaluate after PCA
     pca_log = U_eval_classifier(clf_log, X_tr_pca, y_tr, X_te_pca, y_te)
     pca_rf  = U_eval_classifier(clf_rf,  X_tr_pca, y_tr, X_te_pca, y_te)
 
@@ -170,14 +187,14 @@ if __name__ == "__main__":
     print(f"Logistic Regression → Acc={pca_log['accuracy']:.3f}, F1={pca_log['f1_macro']:.3f}")
     print(f"Random Forest       → Acc={pca_rf['accuracy']:.3f}, F1={pca_rf['f1_macro']:.3f}")
 
-    # 6) Side-by-side comparison table
+    # 7) Side-by-side comparison table
     print("\n=== Performance Comparison ===")
     print(f"{'Model':<22} | {'Acc (Before)':<12} | {'Acc (After)':<12} | {'F1 (Before)':<12} | {'F1 (After)':<12}")
     print("-"*78)
     print(f"{'Logistic Regression':<22} | {base_log['accuracy']:<12.3f} | {pca_log['accuracy']:<12.3f} | {base_log['f1_macro']:<12.3f} | {pca_log['f1_macro']:<12.3f}")
     print(f"{'Random Forest':<22} | {base_rf['accuracy']:<12.3f} | {pca_rf['accuracy']:<12.3f} | {base_rf['f1_macro']:<12.3f} | {pca_rf['f1_macro']:<12.3f}")
 
-    # 7) Optional: save PCA curve to PNG beside CSV
+    # 8) Save PCA cumulative variance plot beside CSV
     out_png = str(Path(U_DATA_PATH).with_suffix("")) + "_pca_cumvar.png"
     plt.figure(figsize=(8, 5))
     plt.plot(np.cumsum(pca.explained_variance_ratio_), marker="o")

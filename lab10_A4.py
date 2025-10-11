@@ -1,7 +1,10 @@
 # ============================================================
-# Lab 10 – A4: Sequential Feature Selection / Reduction + Comparison
+# Lab 10 – A4 (fixed): Sequential Feature Selection / Reduction + Comparison
 # Author: S. Udhaya Sankari
-# Rules: NO prints inside functions; prints/plots only in main.
+# Notes:
+#  - SFS now uses n_jobs=1 (avoid Windows joblib crash) and cv=3
+#  - Scoring inside SFS/RFE prefers macro-F1
+#  - Functions contain NO prints; only main prints
 # ============================================================
 
 from __future__ import annotations
@@ -11,13 +14,14 @@ from pathlib import Path
 from typing import Tuple, Dict, Any, Optional, List
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SequentialFeatureSelector, RFE
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
+from sklearn.base import clone
 
 
 # ---------------------- Data I/O & Cleaning (no prints) ----------------------
@@ -61,8 +65,8 @@ def U_split_scale_safe(
         rare_mask = y.isin(rare_classes)
         X_rare, y_rare = X[rare_mask], y[rare_mask]
         X_rest, y_rest = X[~rare_mask], y[~rare_mask]
-        can_stratify_rest = (len(y_rest) > 0) and (y_rest.value_counts().min() >= 2)
 
+        can_stratify_rest = (len(y_rest) > 0) and (y_rest.value_counts().min() >= 2)
         if can_stratify_rest:
             X_tr0, X_te0, y_tr0, y_te0 = train_test_split(
                 X_rest, y_rest, test_size=test_size, stratify=y_rest, random_state=random_state
@@ -92,6 +96,16 @@ def U_apply_pca(X_train: np.ndarray, X_test: np.ndarray, variance_retained: floa
 
 # ---------------------- SFS / RFE utilities (no prints) ----------------------
 
+def U_eval_subset(estimator, Xtr_sel, ytr, Xte_sel, yte) -> Dict[str, Any]:
+    model = clone(estimator)
+    model.fit(Xtr_sel, ytr)
+    y_pred = model.predict(Xte_sel)
+    return {
+        "accuracy": accuracy_score(yte, y_pred),
+        "f1_macro": f1_score(yte, y_pred, average="macro", zero_division=0),
+        "y_pred": y_pred,
+    }
+
 def U_run_sfs(
     base_estimator,
     X_train: np.ndarray,
@@ -101,21 +115,25 @@ def U_run_sfs(
     feature_names: List[str],
     direction: str = "forward",
     k_values: Optional[List[int]] = None,
-    rng: int = 42
 ) -> Tuple[Dict[str, Any], Dict[int, List[str]]]:
     """
-    Try SFS for a list of k; return the best result dict and the map k->selected names.
-    Best = highest macro-F1 on the test set (ties -> higher accuracy).
+    SFS with cv=3, n_jobs=1 (stable on Windows).
+    Select best k by macro-F1 (tie-break: accuracy).
     """
     if k_values is None:
         k_values = list(range(2, max(3, X_train.shape[1]) + 1))
 
     selected_by_k: Dict[int, List[str]] = {}
-    best = {"k": None, "accuracy": -1.0, "f1_macro": -1.0, "y_pred": None}
+    best = {"k": None, "accuracy": -1.0, "f1_macro": -1.0, "mask": None}
 
     for k in k_values:
         sfs = SequentialFeatureSelector(
-            base_estimator, n_features_to_select=k, direction=direction, cv=5, n_jobs=-1
+            base_estimator,
+            n_features_to_select=k,
+            direction=direction,
+            cv=3,
+            n_jobs=1,            # key fix
+            scoring="f1_macro",  # supervise by macro-F1
         )
         sfs.fit(X_train, y_train)
         mask = sfs.get_support()
@@ -124,15 +142,9 @@ def U_run_sfs(
         sel_names = [f for f, keep in zip(feature_names, mask.tolist(), strict=False) if keep]
         selected_by_k[k] = sel_names
 
-        # re-fit the same estimator to the selected features
-        model = base_estimator
-        model.fit(Xtr_sel, y_train)
-        y_pred = model.predict(Xte_sel)
-        acc = accuracy_score(y_test, y_pred)
-        f1m = f1_score(y_test, y_pred, average="macro", zero_division=0)
-
-        if (f1m > best["f1_macro"]) or (np.isclose(f1m, best["f1_macro"]) and acc > best["accuracy"]):
-            best = {"k": k, "accuracy": acc, "f1_macro": f1m, "y_pred": y_pred, "mask": mask}
+        res = U_eval_subset(base_estimator, Xtr_sel, y_train, Xte_sel, y_test)
+        if (res["f1_macro"] > best["f1_macro"]) or (np.isclose(res["f1_macro"], best["f1_macro"]) and res["accuracy"] > best["accuracy"]):
+            best = {"k": k, "accuracy": res["accuracy"], "f1_macro": res["f1_macro"], "mask": mask}
 
     return best, selected_by_k
 
@@ -145,12 +157,11 @@ def U_run_rfe(
     feature_names: List[str],
     k_values: Optional[List[int]] = None
 ) -> Tuple[Dict[str, Any], Dict[int, List[str]]]:
-    """Try RFE for a list of k; return best result dict and k->selected names."""
     if k_values is None:
         k_values = list(range(2, max(3, X_train.shape[1]) + 1))
 
     selected_by_k: Dict[int, List[str]] = {}
-    best = {"k": None, "accuracy": -1.0, "f1_macro": -1.0, "y_pred": None}
+    best = {"k": None, "accuracy": -1.0, "f1_macro": -1.0, "mask": None}
 
     for k in k_values:
         rfe = RFE(estimator=base_estimator, n_features_to_select=k, step=1)
@@ -161,23 +172,19 @@ def U_run_rfe(
         sel_names = [f for f, keep in zip(feature_names, mask.tolist(), strict=False) if keep]
         selected_by_k[k] = sel_names
 
-        model = base_estimator
-        model.fit(Xtr_sel, y_train)
-        y_pred = model.predict(Xte_sel)
-        acc = accuracy_score(y_test, y_pred)
-        f1m = f1_score(y_test, y_pred, average="macro", zero_division=0)
-
-        if (f1m > best["f1_macro"]) or (np.isclose(f1m, best["f1_macro"]) and acc > best["accuracy"]):
-            best = {"k": k, "accuracy": acc, "f1_macro": f1m, "y_pred": y_pred, "mask": mask}
+        res = U_eval_subset(base_estimator, Xtr_sel, y_train, Xte_sel, y_test)
+        if (res["f1_macro"] > best["f1_macro"]) or (np.isclose(res["f1_macro"], best["f1_macro"]) and res["accuracy"] > best["accuracy"]):
+            best = {"k": k, "accuracy": res["accuracy"], "f1_macro": res["f1_macro"], "mask": mask}
 
     return best, selected_by_k
 
 
-# ---------------------- Eval helpers (no prints) ----------------------
+# ---------------------- Baseline evaluation (no prints) ----------------------
 
 def U_eval_classifier(model, X_train, y_train, X_test, y_test) -> Dict[str, Any]:
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    m = clone(model)
+    m.fit(X_train, y_train)
+    y_pred = m.predict(X_test)
     return {
         "accuracy": accuracy_score(y_test, y_pred),
         "f1_macro": f1_score(y_test, y_pred, average="macro", zero_division=0),
@@ -210,13 +217,15 @@ if __name__ == "__main__":
     p = X_tr.shape[1]
     k_list = list(range(2, max(2, p) + 1))
 
-    # 3) Baseline (no reduction)
-    clf_log = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=RNG)
-    clf_rf  = RandomForestClassifier(n_estimators=200, random_state=RNG)
+    # 3) Models
+    clf_log = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=RNG, class_weight="balanced")
+    clf_rf  = RandomForestClassifier(n_estimators=150, random_state=RNG, class_weight="balanced_subsample")
+
+    # 4) Baseline
     base_log = U_eval_classifier(clf_log, X_tr, y_tr, X_te, y_te)
     base_rf  = U_eval_classifier(clf_rf,  X_tr, y_tr, X_te, y_te)
 
-    # 4) PCA-99 and PCA-95 (to compare with A2/A3)
+    # 5) PCA-99 and PCA-95 (for comparison with A2/A3)
     X_tr_p99, X_te_p99, pca99 = U_apply_pca(X_tr, X_te, variance_retained=0.99, rng=RNG)
     X_tr_p95, X_te_p95, pca95 = U_apply_pca(X_tr, X_te, variance_retained=0.95, rng=RNG)
     res_p99_log = U_eval_classifier(clf_log, X_tr_p99, y_tr, X_te_p99, y_te)
@@ -224,18 +233,16 @@ if __name__ == "__main__":
     res_p95_log = U_eval_classifier(clf_log, X_tr_p95, y_tr, X_te_p95, y_te)
     res_p95_rf  = U_eval_classifier(clf_rf,  X_tr_p95, y_tr, X_te_p95, y_te)
 
-    # 5) SFS (forward/backward) + RFE for both models
-    # --- Logistic Regression ---
-    best_sfs_f_log, map_sfs_f_log = U_run_sfs(clf_log, X_tr, y_tr, X_te, y_te, feat_names, direction="forward", k_values=k_list)
+    # 6) SFS (forward/backward) + RFE for both models (stable settings)
+    best_sfs_f_log, map_sfs_f_log = U_run_sfs(clf_log, X_tr, y_tr, X_te, y_te, feat_names, direction="forward",  k_values=k_list)
     best_sfs_b_log, map_sfs_b_log = U_run_sfs(clf_log, X_tr, y_tr, X_te, y_te, feat_names, direction="backward", k_values=k_list)
     best_rfe_log,    map_rfe_log  = U_run_rfe(clf_log,  X_tr, y_tr, X_te, y_te, feat_names, k_values=k_list)
 
-    # --- Random Forest ---
-    best_sfs_f_rf, map_sfs_f_rf = U_run_sfs(clf_rf, X_tr, y_tr, X_te, y_te, feat_names, direction="forward", k_values=k_list)
+    best_sfs_f_rf, map_sfs_f_rf = U_run_sfs(clf_rf, X_tr, y_tr, X_te, y_te, feat_names, direction="forward",  k_values=k_list)
     best_sfs_b_rf, map_sfs_b_rf = U_run_sfs(clf_rf, X_tr, y_tr, X_te, y_te, feat_names, direction="backward", k_values=k_list)
     best_rfe_rf,   map_rfe_rf   = U_run_rfe(clf_rf,  X_tr, y_tr, X_te, y_te, feat_names, k_values=k_list)
 
-    # 6) Print comparison table
+    # 7) Comparison table
     print("\n=== A4 Comparison: Baseline vs PCA vs SFS/RFE (Test set) ===")
     print(f"{'Model / Method':<28} | {'k/comp':<7} | {'Acc':<6} | {'F1m':<6}")
     print("-"*60)
@@ -244,32 +251,30 @@ if __name__ == "__main__":
     row("LogReg – Baseline", p, base_log)
     row("LogReg – PCA 99%", X_tr_p99.shape[1], res_p99_log)
     row("LogReg – PCA 95%", X_tr_p95.shape[1], res_p95_log)
-    row("LogReg – SFS Forward", best_sfs_f_log['k'], {"accuracy": best_sfs_f_log["accuracy"], "f1_macro": best_sfs_f_log["f1_macro"]})
+    row("LogReg – SFS Forward",  best_sfs_f_log['k'], {"accuracy": best_sfs_f_log["accuracy"], "f1_macro": best_sfs_f_log["f1_macro"]})
     row("LogReg – SFS Backward", best_sfs_b_log['k'], {"accuracy": best_sfs_b_log["accuracy"], "f1_macro": best_sfs_b_log["f1_macro"]})
-    row("LogReg – RFE", best_rfe_log['k'], {"accuracy": best_rfe_log["accuracy"], "f1_macro": best_rfe_log["f1_macro"]})
+    row("LogReg – RFE",          best_rfe_log['k'],   {"accuracy": best_rfe_log["accuracy"],   "f1_macro": best_rfe_log["f1_macro"]})
 
     print("-"*60)
     row("RF – Baseline", p, base_rf)
     row("RF – PCA 99%", X_tr_p99.shape[1], res_p99_rf)
     row("RF – PCA 95%", X_tr_p95.shape[1], res_p95_rf)
-    row("RF – SFS Forward", best_sfs_f_rf['k'], {"accuracy": best_sfs_f_rf["accuracy"], "f1_macro": best_sfs_f_rf["f1_macro"]})
+    row("RF – SFS Forward",  best_sfs_f_rf['k'], {"accuracy": best_sfs_f_rf["accuracy"], "f1_macro": best_sfs_f_rf["f1_macro"]})
     row("RF – SFS Backward", best_sfs_b_rf['k'], {"accuracy": best_sfs_b_rf["accuracy"], "f1_macro": best_sfs_b_rf["f1_macro"]})
-    row("RF – RFE", best_rfe_rf['k'], {"accuracy": best_rfe_rf["accuracy"], "f1_macro": best_rfe_rf["f1_macro"]})
+    row("RF – RFE",          best_rfe_rf['k'],   {"accuracy": best_rfe_rf["accuracy"],   "f1_macro": best_rfe_rf["f1_macro"]})
 
-    # 7) Show the selected subsets for your report
-    def explain(title, best, fmap):
-        mask = best["mask"]
-        picked = [f for f, keep in zip(feat_names, mask.tolist(), strict=False) if keep]
-        print(f"\n{title}: k={best['k']}, selected = {picked}")
+    # 8) Show selected subsets (names)
+    def picked_names(best_mask, names):
+        return [f for f, keep in zip(names, best_mask.tolist(), strict=False) if keep]
 
-    explain("LogReg SFS-Forward (best)", best_sfs_f_log, map_sfs_f_log)
-    explain("LogReg SFS-Backward (best)", best_sfs_b_log, map_sfs_b_log)
-    explain("LogReg RFE (best)", best_rfe_log, map_rfe_log)
-    explain("RF SFS-Forward (best)", best_sfs_f_rf, map_sfs_f_rf)
-    explain("RF SFS-Backward (best)", best_sfs_b_rf, map_sfs_b_rf)
-    explain("RF RFE (best)", best_rfe_rf, map_rfe_rf)
+    print("\nSelected subsets:")
+    print("• LogReg SFS-Forward:",  picked_names(best_sfs_f_log["mask"], feat_names),  f"(k={best_sfs_f_log['k']})")
+    print("• LogReg SFS-Backward:", picked_names(best_sfs_b_log["mask"], feat_names),  f"(k={best_sfs_b_log['k']})")
+    print("• LogReg RFE:",          picked_names(best_rfe_log["mask"],    feat_names), f"(k={best_rfe_log['k']})")
+    print("• RF SFS-Forward:",      picked_names(best_sfs_f_rf["mask"],   feat_names), f"(k={best_sfs_f_rf['k']})")
+    print("• RF SFS-Backward:",     picked_names(best_sfs_b_rf["mask"],   feat_names), f"(k={best_sfs_b_rf['k']})")
+    print("• RF RFE:",              picked_names(best_rfe_rf["mask"],     feat_names), f"(k={best_rfe_rf['k']})")
 
-    # 8) Short guidance (for your write-up)
     print("\nNotes:")
-    print("- SFS uses CV inside the selector; we then re-fit on the selected subset and evaluate on the same test split used for PCA/baseline.")
-    print("- For small n, selected k may vary; report the chosen subset names (printed above) and compare F1/Acc against A2 (99%) and A3 (95%).")
+    print("- SFS uses cv=3 and single-core (n_jobs=1) to avoid worker termination on Windows.")
+    print("- Selection is supervised by macro-F1; results are comparable to your A2 (PCA-99%) and A3 (PCA-95%) runs.")

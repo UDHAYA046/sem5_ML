@@ -75,6 +75,12 @@ This repository contains Python programs developed as part of the **23CSE301 Mac
 | lab9_A2_pipeline.py    | Builds a parallel feature processing pipeline using FeatureUnion + LR.     |
 | lab9_A3_lime.py        | Fits a classification pipeline and generates LIME explanations for outputs.|
 
+| lab10_A1.py | Loads your CSV, computes feature–feature correlations, and saves a triangular heatmap plus a list of strongly correlated pairs.|
+| lab10_A2.py | Applies PCA to retain 99% variance, trains Logistic Regression & Random Forest on PCA features vs baseline, and compares accuracy/F1 with a cumulative-variance plot.|
+| lab10_A3.py |Repeats A2 with 95% variance retained, reports the number of PCs kept, and contrasts performance against baseline and A2.|
+| lab10_A4.py |Runs Sequential Feature Selection (forward/backward) and RFE on scaled data, prints chosen subsets and test metrics, and compares them with PCA-99%, PCA-95%, and baseline.|
+| lab10_A5.py | Explains the best model using LIME (per-instance HTML) and SHAP (global summary PNGs), summarizing which features drive predictions.|
+
 
 
 ## ✅ Features

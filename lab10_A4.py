@@ -1,10 +1,8 @@
 # ============================================================
-# Lab 10 – A4 (fixed): Sequential Feature Selection / Reduction + Comparison
+# Lab 10 – A4 (final): Sequential Feature Selection / Reduction + Comparison
 # Author: S. Udhaya Sankari
-# Notes:
-#  - SFS now uses n_jobs=1 (avoid Windows joblib crash) and cv=3
-#  - Scoring inside SFS/RFE prefers macro-F1
-#  - Functions contain NO prints; only main prints
+# Rules: functions have NO prints; prints/plots only in main.
+# Fixes: SFS uses KFold(2) + n_jobs=1; no 'strict=' in zip (Py3.9 safe)
 # ============================================================
 
 from __future__ import annotations
@@ -14,7 +12,7 @@ from pathlib import Path
 from typing import Tuple, Dict, Any, Optional, List
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SequentialFeatureSelector, RFE
 
@@ -22,6 +20,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 from sklearn.base import clone
+import warnings
 
 
 # ---------------------- Data I/O & Cleaning (no prints) ----------------------
@@ -117,7 +116,7 @@ def U_run_sfs(
     k_values: Optional[List[int]] = None,
 ) -> Tuple[Dict[str, Any], Dict[int, List[str]]]:
     """
-    SFS with cv=3, n_jobs=1 (stable on Windows).
+    SFS with KFold(2) and n_jobs=1 (stable on Windows; tolerant to single-sample class).
     Select best k by macro-F1 (tie-break: accuracy).
     """
     if k_values is None:
@@ -126,20 +125,22 @@ def U_run_sfs(
     selected_by_k: Dict[int, List[str]] = {}
     best = {"k": None, "accuracy": -1.0, "f1_macro": -1.0, "mask": None}
 
+    cv2 = KFold(n_splits=2, shuffle=True, random_state=42)
+
     for k in k_values:
         sfs = SequentialFeatureSelector(
             base_estimator,
             n_features_to_select=k,
             direction=direction,
-            cv=3,
-            n_jobs=1,            # key fix
-            scoring="f1_macro",  # supervise by macro-F1
+            cv=cv2,
+            n_jobs=1,            # key fix for Windows/joblib
+            scoring="f1_macro",
         )
         sfs.fit(X_train, y_train)
         mask = sfs.get_support()
         Xtr_sel = X_train[:, mask]
         Xte_sel = X_test[:, mask]
-        sel_names = [f for f, keep in zip(feature_names, mask.tolist(), strict=False) if keep]
+        sel_names = [f for f, keep in zip(feature_names, mask.tolist()) if keep]
         selected_by_k[k] = sel_names
 
         res = U_eval_subset(base_estimator, Xtr_sel, y_train, Xte_sel, y_test)
@@ -169,7 +170,7 @@ def U_run_rfe(
         mask = rfe.support_
         Xtr_sel = X_train[:, mask]
         Xte_sel = X_test[:, mask]
-        sel_names = [f for f, keep in zip(feature_names, mask.tolist(), strict=False) if keep]
+        sel_names = [f for f, keep in zip(feature_names, mask.tolist()) if keep]
         selected_by_k[k] = sel_names
 
         res = U_eval_subset(base_estimator, Xtr_sel, y_train, Xte_sel, y_test)
@@ -197,6 +198,9 @@ def U_eval_classifier(model, X_train, y_train, X_test, y_test) -> Dict[str, Any]
 # ---------------------- Main (prints only here) ----------------------
 
 if __name__ == "__main__":
+    # Optional: quiet known small-sample warnings
+    warnings.filterwarnings("ignore", category=UserWarning)
+
     # ---- Config ----
     U_DATA_PATH    = r"C:\Users\Udhaya\sem5_ML\features_lab3_labeled.csv"
     U_TARGET_COL   = "class"
@@ -217,7 +221,7 @@ if __name__ == "__main__":
     p = X_tr.shape[1]
     k_list = list(range(2, max(2, p) + 1))
 
-    # 3) Models
+    # 3) Models (class-weighted for imbalance)
     clf_log = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=RNG, class_weight="balanced")
     clf_rf  = RandomForestClassifier(n_estimators=150, random_state=RNG, class_weight="balanced_subsample")
 
@@ -225,7 +229,7 @@ if __name__ == "__main__":
     base_log = U_eval_classifier(clf_log, X_tr, y_tr, X_te, y_te)
     base_rf  = U_eval_classifier(clf_rf,  X_tr, y_tr, X_te, y_te)
 
-    # 5) PCA-99 and PCA-95 (for comparison with A2/A3)
+    # 5) PCA-99 and PCA-95 (to compare with A2/A3)
     X_tr_p99, X_te_p99, pca99 = U_apply_pca(X_tr, X_te, variance_retained=0.99, rng=RNG)
     X_tr_p95, X_te_p95, pca95 = U_apply_pca(X_tr, X_te, variance_retained=0.95, rng=RNG)
     res_p99_log = U_eval_classifier(clf_log, X_tr_p99, y_tr, X_te_p99, y_te)
@@ -265,7 +269,7 @@ if __name__ == "__main__":
 
     # 8) Show selected subsets (names)
     def picked_names(best_mask, names):
-        return [f for f, keep in zip(names, best_mask.tolist(), strict=False) if keep]
+        return [f for f, keep in zip(names, best_mask.tolist()) if keep]
 
     print("\nSelected subsets:")
     print("• LogReg SFS-Forward:",  picked_names(best_sfs_f_log["mask"], feat_names),  f"(k={best_sfs_f_log['k']})")
@@ -276,5 +280,5 @@ if __name__ == "__main__":
     print("• RF RFE:",              picked_names(best_rfe_rf["mask"],     feat_names), f"(k={best_rfe_rf['k']})")
 
     print("\nNotes:")
-    print("- SFS uses cv=3 and single-core (n_jobs=1) to avoid worker termination on Windows.")
-    print("- Selection is supervised by macro-F1; results are comparable to your A2 (PCA-99%) and A3 (PCA-95%) runs.")
+    print("- SFS uses KFold(2) and single-core to avoid worker termination and to tolerate a class with a single sample.")
+    print("- Selection is supervised by macro-F1; results are directly comparable to A2 (PCA-99%) and A3 (PCA-95%).")
